@@ -5,87 +5,90 @@ import {
 } from "firebase/firestore";
 
 let currentPersonId = null;
-let editingDebtId = null;
+let currentDebtId = null;
+let deleteTarget = null;
+let deleteType = null;
 
 console.log('🚀 تطبيق الديون بدأ العمل');
 
-// ===== إدارة الأشخاص =====
+// ===== إدارة المودالات =====
+function openModal(id) {
+    document.getElementById(id).classList.add('active');
+    document.getElementById(id).style.display = 'flex';
+}
 
-// إضافة شخص جديد
+function closeModal(id) {
+    document.getElementById(id).classList.remove('active');
+    document.getElementById(id).style.display = 'none';
+}
+
+// ===== إضافة شخص =====
+window.openAddPersonModal = function() {
+    document.getElementById('personNameInput').value = '';
+    document.getElementById('addPersonMessage').className = 'message-box';
+    document.getElementById('addPersonMessage').style.display = 'none';
+    openModal('addPersonModal');
+    setTimeout(() => document.getElementById('personNameInput').focus(), 100);
+};
+
+window.closeAddPersonModal = function() {
+    closeModal('addPersonModal');
+};
+
 window.addPerson = async function() {
-    const nameInput = document.getElementById('personName');
+    const nameInput = document.getElementById('personNameInput');
     const name = nameInput.value.trim();
     const messageBox = document.getElementById('addPersonMessage');
     
-    // إخفاء الرسائل السابقة
     messageBox.className = 'message-box';
     messageBox.style.display = 'none';
     
     if (!name) {
-        showMessage('الرجاء إدخال اسم الشخص', 'error');
+        showMessage('الرجاء إدخال اسم الشخص', 'error', messageBox);
         nameInput.focus();
         return;
     }
     
     try {
-        console.log('➕ جاري إضافة:', name);
-        
-        // التحقق من وجود الشخص مسبقاً
         const q = query(collection(db, "persons"), where("name", "==", name));
         const snapshot = await getDocs(q);
         
         if (!snapshot.empty) {
-            showMessage(`⚠️ الشخص "${name}" موجود مسبقاً!`, 'error');
+            showMessage(`⚠️ "${name}" موجود مسبقاً!`, 'error', messageBox);
             nameInput.value = '';
             nameInput.focus();
             return;
         }
         
-        // إضافة الشخص
         await addDoc(collection(db, "persons"), {
             name: name,
             createdAt: new Date().toISOString()
         });
         
-        console.log('✅ تم إضافة:', name);
+        showMessage(`✅ تم إضافة "${name}" بنجاح`, 'success', messageBox);
         nameInput.value = '';
-        showMessage(`✅ تم إضافة "${name}" بنجاح`, 'success');
-        nameInput.focus();
-        
-        // التحديث التلقائي سيحدث عبر onSnapshot
+        setTimeout(() => {
+            closeModal('addPersonModal');
+            showToast('✅ تم إضافة العميل بنجاح', 'success');
+        }, 800);
         
     } catch (error) {
-        console.error('❌ خطأ في إضافة الشخص:', error);
-        showMessage('❌ حدث خطأ: ' + error.message, 'error');
+        console.error('❌ خطأ:', error);
+        showMessage('❌ ' + error.message, 'error', messageBox);
     }
 };
 
-// عرض رسائل
-function showMessage(text, type = 'success') {
-    const messageBox = document.getElementById('addPersonMessage');
-    messageBox.textContent = text;
-    messageBox.className = `message-box ${type} show`;
-    messageBox.style.display = 'block';
-    
-    setTimeout(() => {
-        messageBox.style.display = 'none';
-    }, 4000);
-}
-
-// تحميل قائمة الأشخاص (مع تحديث تلقائي)
+// ===== تحميل الأشخاص =====
 function loadPersons() {
     const q = query(collection(db, "persons"));
     
-    // استخدام onSnapshot للتحديث التلقائي
     onSnapshot(q, async (snapshot) => {
-        console.log('📋 تحديث قائمة الأشخاص:', snapshot.size);
-        
         const persons = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
         }));
         
-        // تحديث العداد
+        document.getElementById('totalPersons').textContent = persons.length;
         document.getElementById('personsCount').textContent = persons.length;
         
         const container = document.getElementById('personsContainer');
@@ -94,322 +97,303 @@ function loadPersons() {
             container.innerHTML = `
                 <div class="empty-state">
                     <i class="fas fa-user-plus"></i>
-                    <p>لا يوجد أشخاص مسجلين</p>
-                    <small style="color:#a0aec0;">أضف شخصاً جديداً باستخدام النموذج أعلاه</small>
+                    <p>لا يوجد عملاء</p>
+                    <small style="color:#a0aec0;">اضغط على زر + لإضافة عميل</small>
                 </div>
             `;
             return;
         }
         
         let html = '';
+        let totalDebts = 0;
+        
         for (const person of persons) {
-            // جلب عدد الديون لكل شخص
             const debtsQuery = query(collection(db, "debts"), where("personId", "==", person.id));
             const debtsSnapshot = await getDocs(debtsQuery);
             const debtCount = debtsSnapshot.size;
+            totalDebts += debtCount;
             
-            // الحرف الأول من الاسم للصورة الرمزية
             const firstLetter = person.name.charAt(0).toUpperCase();
             
             html += `
-                <div class="person-card" onclick="showPersonDetails('${person.id}', '${person.name}')">
-                    <button class="delete-person" onclick="event.stopPropagation(); deletePerson('${person.id}')" title="حذف الشخص">
+                <div class="person-card" onclick="openPersonDetails('${person.id}', '${person.name}')">
+                    <button class="delete-person-btn" onclick="event.stopPropagation(); confirmDeletePerson('${person.id}', '${person.name}')">
                         <i class="fas fa-times"></i>
                     </button>
                     <div class="avatar">${firstLetter}</div>
-                    <div class="name">${person.name}</div>
-                    <div class="debt-count">${debtCount} دين</div>
+                    <div class="person-name">${person.name}</div>
+                    <div class="person-debts">${debtCount} دين</div>
                 </div>
             `;
         }
+        
         container.innerHTML = html;
+        document.getElementById('totalDebts').textContent = totalDebts;
         
     }, (error) => {
-        console.error('❌ خطأ في الاستماع للتحديثات:', error);
-        document.getElementById('personsContainer').innerHTML = `
-            <div class="empty-state" style="color:#fc8181;">
-                <i class="fas fa-exclamation-circle"></i>
-                <p>حدث خطأ في تحميل البيانات</p>
-                <small>${error.message}</small>
-            </div>
-        `;
+        console.error('❌ خطأ:', error);
+        showToast('❌ خطأ في تحميل البيانات', 'error');
     });
 }
 
-// حذف شخص
-window.deletePerson = async function(personId) {
-    if (!confirm('⚠️ هل أنت متأكد من حذف هذا الشخص وكل ديونه؟')) return;
+// ===== حذف شخص =====
+window.confirmDeletePerson = function(id, name) {
+    deleteTarget = id;
+    deleteType = 'person';
+    document.getElementById('confirmMessage').textContent = `هل أنت متأكد من حذف "${name}" وكل ديونه؟`;
+    openModal('confirmModal');
+};
+
+window.confirmDelete = async function() {
+    if (!deleteTarget) return;
     
     try {
-        // حذف جميع ديون الشخص
-        const debtsQuery = query(collection(db, "debts"), where("personId", "==", personId));
-        const debtsSnapshot = await getDocs(debtsQuery);
-        
-        for (const debtDoc of debtsSnapshot.docs) {
-            await deleteDoc(doc(db, "debts", debtDoc.id));
+        if (deleteType === 'person') {
+            const debtsQuery = query(collection(db, "debts"), where("personId", "==", deleteTarget));
+            const debtsSnapshot = await getDocs(debtsQuery);
+            
+            for (const debtDoc of debtsSnapshot.docs) {
+                await deleteDoc(doc(db, "debts", debtDoc.id));
+            }
+            
+            await deleteDoc(doc(db, "persons", deleteTarget));
+            
+            if (currentPersonId === deleteTarget) {
+                closePersonDetails();
+            }
+            
+            showToast('✅ تم حذف العميل وديونه', 'success');
+        } else if (deleteType === 'debt') {
+            await deleteDoc(doc(db, "debts", deleteTarget));
+            showToast('✅ تم حذف الدين', 'success');
         }
         
-        // حذف الشخص
-        await deleteDoc(doc(db, "persons", personId));
-        
-        // إذا كان الشخص مفتوحاً حالياً، أغلقه
-        if (currentPersonId === personId) {
-            closeDetails();
-        }
-        
-        showToast('✅ تم حذف الشخص وديونه', 'success');
+        closeConfirmModal();
+        deleteTarget = null;
+        deleteType = null;
         
     } catch (error) {
-        console.error('❌ خطأ في حذف الشخص:', error);
-        showToast('❌ خطأ في حذف الشخص', 'error');
+        console.error('❌ خطأ:', error);
+        showToast('❌ خطأ في الحذف', 'error');
     }
 };
 
-// ===== إدارة الديون =====
+window.closeConfirmModal = function() {
+    closeModal('confirmModal');
+    deleteTarget = null;
+    deleteType = null;
+};
 
-// عرض تفاصيل الشخص
-window.showPersonDetails = async function(personId, personName) {
+// ===== تفاصيل الشخص =====
+window.openPersonDetails = async function(personId, personName) {
     currentPersonId = personId;
-    document.getElementById('selectedPersonName').textContent = personName;
-    document.getElementById('personDetails').style.display = 'flex';
-    document.body.style.overflow = 'hidden'; // منع التمرير خلف النافذة
+    document.getElementById('selectedPersonName').innerHTML = `<i class="fas fa-user"></i> ${personName}`;
     
-    // إعادة تعيين نموذج الإضافة
-    editingDebtId = null;
-    document.querySelector('.add-debt-form h3').innerHTML = '<i class="fas fa-plus-circle"></i> إضافة دين جديد';
-    document.querySelector('.btn-add-debt').innerHTML = '<i class="fas fa-save"></i> إضافة';
-    document.getElementById('debtAmount').value = '';
-    document.getElementById('debtDate').value = new Date().toISOString().split('T')[0];
+    // إعادة تعيين نموذج الدين
+    document.getElementById('debtAmountInput').value = '';
+    document.getElementById('debtDateInput').value = new Date().toISOString().split('T')[0];
+    document.getElementById('debtMessage').className = 'message-box';
+    document.getElementById('debtMessage').style.display = 'none';
+    currentDebtId = null;
     
-    await loadDebts(personId);
+    openModal('personDetailsModal');
+    loadDebts(personId);
 };
 
-// إغلاق تفاصيل الشخص
-window.closeDetails = function() {
-    document.getElementById('personDetails').style.display = 'none';
-    document.body.style.overflow = 'auto';
+window.closePersonDetails = function() {
+    closeModal('personDetailsModal');
     currentPersonId = null;
-    editingDebtId = null;
+    currentDebtId = null;
 };
 
-// تحميل ديون شخص (مع تحديث تلقائي)
+// ===== تحميل الديون =====
 function loadDebts(personId) {
     const q = query(collection(db, "debts"), where("personId", "==", personId));
     
     onSnapshot(q, (snapshot) => {
-        console.log('📋 تحديث قائمة الديون:', snapshot.size);
-        
         const debts = snapshot.docs.map(doc => ({
             id: doc.id,
             ...doc.data()
         }));
         
-        // ترتيب حسب التاريخ (الأحدث أولاً)
         debts.sort((a, b) => new Date(b.date) - new Date(a.date));
         
-        const tbody = document.getElementById('debtListBody');
-        const totalDebtsCount = document.getElementById('totalDebtsCount');
-        const totalAmount = document.getElementById('totalAmount');
+        const container = document.getElementById('debtsContainer');
+        let total = 0;
+        
+        document.getElementById('clientDebtCount').textContent = debts.length;
         
         if (debts.length === 0) {
-            tbody.innerHTML = `
-                <tr>
-                    <td colspan="4" style="text-align:center;color:#a0aec0;padding:40px;">
-                        <i class="fas fa-inbox" style="font-size:2.5rem;display:block;margin-bottom:10px;"></i>
-                        لا يوجد ديون مسجلة
-                    </td>
-                </tr>
+            container.innerHTML = `
+                <div class="empty-debts">
+                    <i class="fas fa-inbox"></i>
+                    <p>لا يوجد ديون مسجلة</p>
+                </div>
             `;
-            totalDebtsCount.textContent = '0';
-            totalAmount.textContent = '0';
+            document.getElementById('clientTotalAmount').textContent = '0';
             return;
         }
         
-        let total = 0;
-        tbody.innerHTML = '';
-        debts.forEach((debt, index) => {
+        let html = '';
+        debts.forEach((debt) => {
             total += Number(debt.amount);
-            tbody.innerHTML += `
-                <tr>
-                    <td>${index + 1}</td>
-                    <td><strong>${Number(debt.amount).toLocaleString()}</strong></td>
-                    <td>${formatDate(debt.date)}</td>
-                    <td>
-                        <div class="actions">
-                            <button class="btn-edit" onclick="editDebt('${debt.id}', '${debt.amount}', '${debt.date}')">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button class="btn-delete" onclick="deleteDebt('${debt.id}')">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
+            html += `
+                <div class="debt-item">
+                    <div class="debt-info">
+                        <span class="debt-amount">${Number(debt.amount).toLocaleString()} ل.س</span>
+                        <span class="debt-date">${formatDate(debt.date)}</span>
+                    </div>
+                    <div class="debt-actions">
+                        <button class="btn-edit-debt" onclick="editDebt('${debt.id}', '${debt.amount}', '${debt.date}')">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="btn-delete-debt" onclick="confirmDeleteDebt('${debt.id}')">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
             `;
         });
         
-        totalDebtsCount.textContent = debts.length;
-        totalAmount.textContent = total.toLocaleString();
+        container.innerHTML = html;
+        document.getElementById('clientTotalAmount').textContent = total.toLocaleString();
         
     }, (error) => {
-        console.error('❌ خطأ في تحميل الديون:', error);
+        console.error('❌ خطأ:', error);
     });
 }
 
-// إضافة دين جديد
+// ===== إضافة دين =====
 window.addDebt = async function() {
     if (!currentPersonId) {
-        showToast('⚠️ الرجاء اختيار شخص أولاً', 'error');
+        showToast('⚠️ الرجاء اختيار عميل', 'warning');
         return;
     }
     
-    const amount = document.getElementById('debtAmount').value;
-    const date = document.getElementById('debtDate').value;
+    const amount = document.getElementById('debtAmountInput').value;
+    const date = document.getElementById('debtDateInput').value;
+    const messageBox = document.getElementById('debtMessage');
+    
+    messageBox.className = 'message-box';
+    messageBox.style.display = 'none';
     
     if (!amount || !date) {
-        showToast('⚠️ الرجاء إدخال المبلغ والتاريخ', 'error');
+        showMessage('الرجاء إدخال المبلغ والتاريخ', 'error', messageBox);
         return;
     }
     
     if (isNaN(amount) || Number(amount) <= 0) {
-        showToast('⚠️ الرجاء إدخال مبلغ صحيح أكبر من 0', 'error');
+        showMessage('الرجاء إدخال مبلغ صحيح', 'error', messageBox);
         return;
     }
     
     try {
-        if (editingDebtId) {
-            // تعديل دين موجود
-            await updateDoc(doc(db, "debts", editingDebtId), {
+        if (currentDebtId) {
+            await updateDoc(doc(db, "debts", currentDebtId), {
                 amount: Number(amount),
                 date: date
             });
-            showToast('✅ تم تعديل الدين بنجاح', 'success');
-            editingDebtId = null;
-            document.querySelector('.add-debt-form h3').innerHTML = '<i class="fas fa-plus-circle"></i> إضافة دين جديد';
-            document.querySelector('.btn-add-debt').innerHTML = '<i class="fas fa-save"></i> إضافة';
+            showToast('✅ تم تعديل الدين', 'success');
+            currentDebtId = null;
         } else {
-            // إضافة دين جديد
             await addDoc(collection(db, "debts"), {
                 personId: currentPersonId,
                 amount: Number(amount),
                 date: date,
                 createdAt: new Date().toISOString()
             });
-            showToast('✅ تم إضافة الدين بنجاح', 'success');
+            showToast('✅ تم إضافة الدين', 'success');
         }
         
-        // إعادة تعيين النموذج
-        document.getElementById('debtAmount').value = '';
-        document.getElementById('debtDate').value = new Date().toISOString().split('T')[0];
-        document.getElementById('debtAmount').focus();
+        document.getElementById('debtAmountInput').value = '';
+        document.getElementById('debtDateInput').value = new Date().toISOString().split('T')[0];
+        document.getElementById('debtAmountInput').focus();
         
     } catch (error) {
-        console.error('❌ خطأ في حفظ الدين:', error);
-        showToast('❌ خطأ في حفظ الدين: ' + error.message, 'error');
+        console.error('❌ خطأ:', error);
+        showMessage('❌ ' + error.message, 'error', messageBox);
     }
 };
 
-// تعديل دين
-window.editDebt = function(debtId, amount, date) {
-    editingDebtId = debtId;
-    document.getElementById('debtAmount').value = amount;
-    document.getElementById('debtDate').value = date;
-    document.querySelector('.add-debt-form h3').innerHTML = '<i class="fas fa-edit"></i> تعديل الدين';
-    document.querySelector('.btn-add-debt').innerHTML = '<i class="fas fa-save"></i> تحديث';
-    document.getElementById('debtAmount').focus();
-    document.getElementById('debtAmount').scrollIntoView({ behavior: 'smooth' });
+// ===== تعديل دين =====
+window.editDebt = function(id, amount, date) {
+    currentDebtId = id;
+    document.getElementById('debtAmountInput').value = amount;
+    document.getElementById('debtDateInput').value = date;
+    document.getElementById('debtAmountInput').focus();
+    document.getElementById('debtAmountInput').scrollIntoView({ behavior: 'smooth' });
+    showToast('✏️ قم بتعديل المبلغ ثم اضغط إضافة', 'warning');
 };
 
-// حذف دين
-window.deleteDebt = async function(debtId) {
-    if (!confirm('⚠️ هل أنت متأكد من حذف هذا الدين؟')) return;
-    
-    try {
-        await deleteDoc(doc(db, "debts", debtId));
-        showToast('✅ تم حذف الدين بنجاح', 'success');
-    } catch (error) {
-        console.error('❌ خطأ في حذف الدين:', error);
-        showToast('❌ خطأ في حذف الدين', 'error');
-    }
+// ===== حذف دين =====
+window.confirmDeleteDebt = function(id) {
+    deleteTarget = id;
+    deleteType = 'debt';
+    document.getElementById('confirmMessage').textContent = 'هل أنت متأكد من حذف هذا الدين؟';
+    openModal('confirmModal');
 };
 
 // ===== أدوات مساعدة =====
-
-// تنسيق التاريخ
 function formatDate(dateString) {
     const options = { year: 'numeric', month: 'long', day: 'numeric' };
     return new Date(dateString + 'T00:00:00').toLocaleDateString('ar-SY', options);
 }
 
-// عرض تنبيه (Toast Notification)
-function showToast(message, type = 'success') {
-    const existingToast = document.querySelector('.toast-notification');
-    if (existingToast) existingToast.remove();
-    
+function showMessage(text, type, element) {
+    element.textContent = text;
+    element.className = `message-box ${type} show`;
+    element.style.display = 'block';
+}
+
+window.showToast = function(message, type = 'success') {
+    const container = document.getElementById('toastContainer');
     const toast = document.createElement('div');
-    toast.className = 'toast-notification';
-    const colors = {
-        success: '#48bb78',
-        error: '#fc8181',
-        warning: '#ed8936'
-    };
-    
-    toast.style.cssText = `
-        position: fixed;
-        bottom: 30px;
-        right: 30px;
-        z-index: 9999;
-        padding: 16px 25px;
-        border-radius: 14px;
-        background: ${colors[type] || '#48bb78'};
-        color: white;
-        box-shadow: 0 10px 40px rgba(0,0,0,0.2);
-        font-weight: 500;
-        font-family: 'Tajawal', sans-serif;
-        max-width: 90%;
-        animation: slideUp 0.4s ease;
-        direction: rtl;
-        font-size: 1em;
-    `;
-    
+    toast.className = `toast toast-${type}`;
     toast.textContent = message;
-    document.body.appendChild(toast);
+    container.appendChild(toast);
     
     setTimeout(() => {
         toast.style.opacity = '0';
         toast.style.transition = 'opacity 0.3s';
         setTimeout(() => toast.remove(), 300);
-    }, 3500);
-}
+    }, 3000);
+};
 
 // ===== بدء التطبيق =====
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('✅ التطبيق جاهز للاستخدام');
     loadPersons();
+    document.getElementById('debtDateInput').value = new Date().toISOString().split('T')[0];
     
-    // إضافة حدث Enter لحقل الإدخال
-    document.getElementById('personName').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            window.addPerson();
-        }
+    // Enter key events
+    document.getElementById('personNameInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') window.addPerson();
     });
     
-    // إضافة حدث Enter لحقل المبلغ
-    document.getElementById('debtAmount').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            window.addDebt();
-        }
+    document.getElementById('debtAmountInput').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') window.addDebt();
     });
     
-    // تعيين التاريخ الحالي
-    document.getElementById('debtDate').value = new Date().toISOString().split('T')[0];
+    // إغلاق المودال عند الضغط خارجها
+    document.querySelectorAll('.modal').forEach(modal => {
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                if (modal.id === 'addPersonModal') closeAddPersonModal();
+                else if (modal.id === 'personDetailsModal') closePersonDetails();
+                else if (modal.id === 'confirmModal') closeConfirmModal();
+            }
+        });
+    });
 });
 
-// جعل الدوال عامة
+// ===== Export functions =====
 window.addPerson = window.addPerson;
-window.deletePerson = window.deletePerson;
-window.showPersonDetails = window.showPersonDetails;
-window.closeDetails = window.closeDetails;
+window.openAddPersonModal = window.openAddPersonModal;
+window.closeAddPersonModal = window.closeAddPersonModal;
+window.openPersonDetails = window.openPersonDetails;
+window.closePersonDetails = window.closePersonDetails;
 window.addDebt = window.addDebt;
 window.editDebt = window.editDebt;
-window.deleteDebt = window.deleteDebt;
+window.confirmDeleteDebt = window.confirmDeleteDebt;
+window.confirmDeletePerson = window.confirmDeletePerson;
+window.confirmDelete = window.confirmDelete;
+window.closeConfirmModal = window.closeConfirmModal;
