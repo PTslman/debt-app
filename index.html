@@ -1,1 +1,119 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>📊 دفتر الديون - إدارة الديون</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+</head>
+<body>
+    <div class="container">
+        <!-- رأس الصفحة -->
+        <header>
+            <h1><i class="fas fa-book"></i> دفتر الديون</h1>
+            <div class="header-actions">
+                <button onclick="exportBackup()" class="btn-backup">
+                    <i class="fas fa-download"></i> نسخة احتياطية
+                </button>
+                <button onclick="importBackup()" class="btn-restore">
+                    <i class="fas fa-upload"></i> استعادة
+                </button>
+            </div>
+        </header>
 
+        <!-- نموذج إضافة شخص جديد -->
+        <section class="add-person">
+            <h2><i class="fas fa-user-plus"></i> إضافة شخص جديد</h2>
+            <div class="form-group">
+                <input type="text" id="personName" placeholder="اسم الشخص (مثال: أحمد)" />
+                <button onclick="addPerson()" class="btn-add-person">
+                    <i class="fas fa-plus"></i> إضافة
+                </button>
+            </div>
+        </section>
+
+        <!-- قائمة الأشخاص -->
+        <section class="persons-list">
+            <h2><i class="fas fa-users"></i> الأشخاص</h2>
+            <div id="personsContainer"></div>
+        </section>
+
+        <!-- تفاصيل الشخص (الديون) -->
+        <section class="person-details" id="personDetails" style="display:none;">
+            <div class="details-header">
+                <h2 id="selectedPersonName"></h2>
+                <button onclick="closeDetails()" class="btn-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <!-- نموذج إضافة دين -->
+            <div class="add-debt-form">
+                <h3><i class="fas fa-plus-circle"></i> إضافة دين جديد</h3>
+                <div class="form-row">
+                    <input type="number" id="debtAmount" placeholder="المبلغ (ل.س)" />
+                    <input type="date" id="debtDate" />
+                    <button onclick="addDebt()" class="btn-add-debt">
+                        <i class="fas fa-save"></i> إضافة
+                    </button>
+                </div>
+            </div>
+
+            <!-- جدول الديون -->
+            <div class="debt-table-wrapper">
+                <table class="debt-table">
+                    <thead>
+                        <tr>
+                            <th>#</th>
+                            <th>المبلغ (ل.س)</th>
+                            <th>التاريخ</th>
+                            <th>الإجراءات</th>
+                        </tr>
+                    </thead>
+                    <tbody id="debtListBody"></tbody>
+                </table>
+            </div>
+
+            <!-- إجمالي الديون -->
+            <div class="total-debt" id="totalDebt">
+                <strong>الإجمالي:</strong> <span id="totalAmount">0</span> ل.س
+            </div>
+        </section>
+    </div>
+
+    <!-- ملفات JavaScript -->
+    <script type="importmap">
+        {
+            "imports": {
+                "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
+                "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js",
+                "firebase/analytics": "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import { db } from './js/firebase-config.js';
+        import { 
+            collection, addDoc, getDocs, deleteDoc, doc, 
+            updateDoc, query, where 
+        } from "firebase/firestore";
+
+        // جعل الدوال عامة للاستخدام من HTML
+        window.db = db;
+        window.collection = collection;
+        window.addDoc = addDoc;
+        window.getDocs = getDocs;
+        window.deleteDoc = deleteDoc;
+        window.doc = doc;
+        window.updateDoc = updateDoc;
+        window.query = query;
+        window.where = where;
+    </script>
+
+    <script type="module" src="js/app.js"></script>
+    <script type="module" src="js/backup.js"></script>
+</body>
+</html>
