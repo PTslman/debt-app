@@ -5,14 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>📊 دفتر الديون - إدارة الديون</title>
     <link rel="stylesheet" href="css/style.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 </head>
 <body>
     <div class="container">
         <!-- رأس الصفحة -->
         <header>
-            <h1><i class="fas fa-book"></i> دفتر الديون</h1>
+            <div class="header-left">
+                <h1><i class="fas fa-book"></i> دفتر الديون</h1>
+                <span class="badge">v2.0</span>
+            </div>
             <div class="header-actions">
                 <button onclick="exportBackup()" class="btn-backup">
                     <i class="fas fa-download"></i> نسخة احتياطية
@@ -24,61 +27,93 @@
         </header>
 
         <!-- نموذج إضافة شخص جديد -->
-        <section class="add-person">
-            <h2><i class="fas fa-user-plus"></i> إضافة شخص جديد</h2>
-            <div class="form-group">
-                <input type="text" id="personName" placeholder="اسم الشخص (مثال: أحمد)" />
-                <button onclick="addPerson()" class="btn-add-person">
-                    <i class="fas fa-plus"></i> إضافة
-                </button>
+        <section class="add-person-section">
+            <div class="add-person-card">
+                <h2><i class="fas fa-user-plus"></i> إضافة شخص جديد</h2>
+                <div class="form-group">
+                    <input type="text" id="personName" placeholder="أدخل اسم الشخص..." />
+                    <button onclick="addPerson()" class="btn-add-person">
+                        <i class="fas fa-plus"></i> إضافة
+                    </button>
+                </div>
+                <div id="addPersonMessage" class="message-box"></div>
             </div>
         </section>
 
         <!-- قائمة الأشخاص -->
-        <section class="persons-list">
-            <h2><i class="fas fa-users"></i> الأشخاص</h2>
-            <div id="personsContainer"></div>
+        <section class="persons-section">
+            <div class="section-header">
+                <h2><i class="fas fa-users"></i> الأشخاص</h2>
+                <span class="count-badge" id="personsCount">0</span>
+            </div>
+            <div id="personsContainer" class="persons-grid"></div>
         </section>
 
         <!-- تفاصيل الشخص (الديون) -->
         <section class="person-details" id="personDetails" style="display:none;">
-            <div class="details-header">
-                <h2 id="selectedPersonName"></h2>
-                <button onclick="closeDetails()" class="btn-close">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            
-            <!-- نموذج إضافة دين -->
-            <div class="add-debt-form">
-                <h3><i class="fas fa-plus-circle"></i> إضافة دين جديد</h3>
-                <div class="form-row">
-                    <input type="number" id="debtAmount" placeholder="المبلغ (ل.س)" />
-                    <input type="date" id="debtDate" />
-                    <button onclick="addDebt()" class="btn-add-debt">
-                        <i class="fas fa-save"></i> إضافة
+            <div class="details-overlay">
+                <div class="details-header">
+                    <div class="details-title">
+                        <i class="fas fa-user-circle" style="font-size:2rem;color:#667eea;"></i>
+                        <h2 id="selectedPersonName"></h2>
+                    </div>
+                    <button onclick="closeDetails()" class="btn-close">
+                        <i class="fas fa-times"></i>
                     </button>
                 </div>
-            </div>
+                
+                <!-- إحصائيات سريعة -->
+                <div class="quick-stats">
+                    <div class="stat-item">
+                        <span class="stat-label">إجمالي الديون</span>
+                        <span class="stat-value" id="totalDebtsCount">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">المبلغ الإجمالي</span>
+                        <span class="stat-value" id="totalAmount">0</span>
+                        <span class="stat-currency">ل.س</span>
+                    </div>
+                </div>
 
-            <!-- جدول الديون -->
-            <div class="debt-table-wrapper">
-                <table class="debt-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>المبلغ (ل.س)</th>
-                            <th>التاريخ</th>
-                            <th>الإجراءات</th>
-                        </tr>
-                    </thead>
-                    <tbody id="debtListBody"></tbody>
-                </table>
-            </div>
+                <!-- نموذج إضافة دين -->
+                <div class="add-debt-form">
+                    <h3><i class="fas fa-plus-circle"></i> إضافة دين جديد</h3>
+                    <div class="form-row">
+                        <div class="input-group">
+                            <label>المبلغ</label>
+                            <input type="number" id="debtAmount" placeholder="المبلغ بالليرة السورية" />
+                        </div>
+                        <div class="input-group">
+                            <label>التاريخ</label>
+                            <input type="date" id="debtDate" />
+                        </div>
+                        <button onclick="addDebt()" class="btn-add-debt">
+                            <i class="fas fa-save"></i> إضافة
+                        </button>
+                    </div>
+                </div>
 
-            <!-- إجمالي الديون -->
-            <div class="total-debt" id="totalDebt">
-                <strong>الإجمالي:</strong> <span id="totalAmount">0</span> ل.س
+                <!-- جدول الديون -->
+                <div class="debt-table-wrapper">
+                    <table class="debt-table">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>المبلغ (ل.س)</th>
+                                <th>التاريخ</th>
+                                <th>الإجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="debtListBody">
+                            <tr>
+                                <td colspan="4" style="text-align:center;color:#718096;padding:30px;">
+                                    <i class="fas fa-inbox" style="font-size:2rem;display:block;margin-bottom:10px;"></i>
+                                    لا يوجد ديون لهذا الشخص
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
         </section>
     </div>
@@ -98,7 +133,7 @@
         import { db } from './js/firebase-config.js';
         import { 
             collection, addDoc, getDocs, deleteDoc, doc, 
-            updateDoc, query, where 
+            updateDoc, query, where, onSnapshot 
         } from "firebase/firestore";
 
         // جعل الدوال عامة للاستخدام من HTML
@@ -111,6 +146,7 @@
         window.updateDoc = updateDoc;
         window.query = query;
         window.where = where;
+        window.onSnapshot = onSnapshot;
     </script>
 
     <script type="module" src="js/app.js"></script>
