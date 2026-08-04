@@ -9,7 +9,7 @@ body {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     min-height: 100vh;
     padding: 20px;
-    color: #333;
+    color: #2d3748;
 }
 
 .container {
@@ -18,11 +18,11 @@ body {
     background: rgba(255, 255, 255, 0.95);
     border-radius: 30px;
     padding: 30px;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.15);
     backdrop-filter: blur(10px);
 }
 
-/* رأس الصفحة */
+/* ===== رأس الصفحة ===== */
 header {
     display: flex;
     justify-content: space-between;
@@ -30,18 +30,34 @@ header {
     flex-wrap: wrap;
     margin-bottom: 30px;
     padding-bottom: 20px;
-    border-bottom: 3px solid #667eea;
+    border-bottom: 3px solid #e2e8f0;
+}
+
+.header-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
 }
 
 header h1 {
     color: #667eea;
     font-size: 2em;
-    font-weight: 700;
+    font-weight: 800;
+}
+
+.badge {
+    background: #667eea;
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.7em;
+    font-weight: 500;
 }
 
 .header-actions {
     display: flex;
     gap: 10px;
+    flex-wrap: wrap;
 }
 
 .btn-backup, .btn-restore {
@@ -52,6 +68,7 @@ header h1 {
     cursor: pointer;
     transition: all 0.3s;
     font-family: 'Tajawal', sans-serif;
+    font-size: 0.95em;
 }
 
 .btn-backup {
@@ -76,120 +93,188 @@ header h1 {
     box-shadow: 0 5px 15px rgba(237, 137, 54, 0.4);
 }
 
-/* إضافة شخص */
-.add-person {
-    background: #f7fafc;
-    padding: 20px;
-    border-radius: 20px;
+/* ===== إضافة شخص ===== */
+.add-person-section {
     margin-bottom: 30px;
 }
 
-.add-person h2 {
+.add-person-card {
+    background: linear-gradient(135deg, #f7fafc, #edf2f7);
+    padding: 25px;
+    border-radius: 20px;
+    border: 2px dashed #cbd5e0;
+    transition: all 0.3s;
+}
+
+.add-person-card:hover {
+    border-color: #667eea;
+    background: #f7fafc;
+}
+
+.add-person-card h2 {
     color: #2d3748;
     margin-bottom: 15px;
-    font-size: 1.3em;
+    font-size: 1.2em;
 }
 
 .form-group {
     display: flex;
-    gap: 10px;
+    gap: 12px;
     flex-wrap: wrap;
 }
 
 .form-group input {
     flex: 1;
-    padding: 12px 20px;
+    padding: 14px 20px;
     border: 2px solid #e2e8f0;
     border-radius: 12px;
     font-size: 1em;
     font-family: 'Tajawal', sans-serif;
     transition: all 0.3s;
     min-width: 200px;
+    background: white;
 }
 
 .form-group input:focus {
     outline: none;
     border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+    box-shadow: 0 0 0 4px rgba(102, 126, 234, 0.1);
 }
 
 .btn-add-person {
-    padding: 12px 30px;
-    background: #667eea;
+    padding: 14px 35px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
     color: white;
     border: none;
     border-radius: 12px;
     cursor: pointer;
-    font-weight: 500;
+    font-weight: 700;
     font-family: 'Tajawal', sans-serif;
+    font-size: 1em;
     transition: all 0.3s;
+    white-space: nowrap;
 }
 
 .btn-add-person:hover {
-    background: #5a67d8;
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
 }
 
-/* قائمة الأشخاص */
-.persons-list {
+.message-box {
+    margin-top: 12px;
+    padding: 10px;
+    border-radius: 10px;
+    display: none;
+}
+
+.message-box.show {
+    display: block;
+}
+
+.message-box.success {
+    background: #c6f6d5;
+    color: #22543d;
+    border-right: 4px solid #48bb78;
+}
+
+.message-box.error {
+    background: #fed7d7;
+    color: #9b2c2c;
+    border-right: 4px solid #fc8181;
+}
+
+/* ===== قائمة الأشخاص ===== */
+.persons-section {
     margin-bottom: 30px;
 }
 
-.persons-list h2 {
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.section-header h2 {
     color: #2d3748;
-    margin-bottom: 15px;
     font-size: 1.3em;
+}
+
+.count-badge {
+    background: #667eea;
+    color: white;
+    padding: 4px 15px;
+    border-radius: 20px;
+    font-size: 0.9em;
+    font-weight: 500;
 }
 
 .persons-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 15px;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 20px;
 }
 
 .person-card {
     background: white;
-    padding: 20px;
-    border-radius: 15px;
+    padding: 25px 20px;
+    border-radius: 16px;
     border: 2px solid #e2e8f0;
     cursor: pointer;
     transition: all 0.3s;
     text-align: center;
     position: relative;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 }
 
 .person-card:hover {
     transform: translateY(-5px);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    box-shadow: 0 12px 35px rgba(0,0,0,0.1);
     border-color: #667eea;
+}
+
+.person-card .avatar {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #667eea, #764ba2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 12px;
+    color: white;
+    font-size: 1.5em;
+    font-weight: 700;
 }
 
 .person-card .name {
     font-weight: 700;
     font-size: 1.1em;
     color: #2d3748;
+    margin-bottom: 5px;
 }
 
 .person-card .debt-count {
     font-size: 0.9em;
     color: #718096;
-    margin-top: 5px;
 }
 
 .person-card .delete-person {
     position: absolute;
-    top: 5px;
-    left: 5px;
+    top: 8px;
+    left: 8px;
     background: #fc8181;
     color: white;
     border: none;
     border-radius: 50%;
-    width: 25px;
-    height: 25px;
+    width: 28px;
+    height: 28px;
     cursor: pointer;
     font-size: 12px;
     transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .person-card .delete-person:hover {
@@ -197,23 +282,60 @@ header h1 {
     transform: scale(1.1);
 }
 
-/* تفاصيل الشخص */
-.person-details {
-    background: #f7fafc;
-    padding: 25px;
-    border-radius: 20px;
-    margin-top: 20px;
-    animation: slideIn 0.3s ease;
+.empty-state {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 50px 20px;
+    color: #a0aec0;
 }
 
-@keyframes slideIn {
+.empty-state i {
+    font-size: 3rem;
+    display: block;
+    margin-bottom: 15px;
+}
+
+/* ===== تفاصيل الشخص ===== */
+.person-details {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.details-overlay {
+    background: white;
+    border-radius: 25px;
+    max-width: 900px;
+    width: 100%;
+    max-height: 90vh;
+    padding: 30px;
+    overflow-y: auto;
+    animation: slideUp 0.3s ease;
+    box-shadow: 0 25px 70px rgba(0,0,0,0.3);
+}
+
+@keyframes slideUp {
     from {
+        transform: translateY(30px);
         opacity: 0;
-        transform: translateY(-20px);
     }
     to {
-        opacity: 1;
         transform: translateY(0);
+        opacity: 1;
     }
 }
 
@@ -222,9 +344,17 @@ header h1 {
     justify-content: space-between;
     align-items: center;
     margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #e2e8f0;
 }
 
-.details-header h2 {
+.details-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.details-title h2 {
     color: #2d3748;
     font-size: 1.5em;
 }
@@ -239,6 +369,9 @@ header h1 {
     cursor: pointer;
     font-size: 18px;
     transition: all 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .btn-close:hover {
@@ -246,9 +379,43 @@ header h1 {
     transform: rotate(90deg);
 }
 
-/* نموذج إضافة دين */
+/* ===== إحصائيات سريعة ===== */
+.quick-stats {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 25px;
+}
+
+.stat-item {
+    background: linear-gradient(135deg, #f7fafc, #edf2f7);
+    padding: 15px 20px;
+    border-radius: 12px;
+    text-align: center;
+}
+
+.stat-label {
+    display: block;
+    color: #718096;
+    font-size: 0.9em;
+    margin-bottom: 5px;
+}
+
+.stat-value {
+    font-size: 1.8em;
+    font-weight: 800;
+    color: #2d3748;
+}
+
+.stat-currency {
+    font-size: 0.8em;
+    color: #718096;
+    margin-right: 5px;
+}
+
+/* ===== إضافة دين ===== */
 .add-debt-form {
-    background: white;
+    background: #f7fafc;
     padding: 20px;
     border-radius: 15px;
     margin-bottom: 20px;
@@ -262,66 +429,84 @@ header h1 {
 
 .form-row {
     display: flex;
-    gap: 10px;
+    gap: 15px;
     flex-wrap: wrap;
+    align-items: flex-end;
 }
 
-.form-row input {
+.input-group {
     flex: 1;
+    min-width: 150px;
+}
+
+.input-group label {
+    display: block;
+    font-size: 0.85em;
+    color: #718096;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+.input-group input {
+    width: 100%;
     padding: 10px 15px;
     border: 2px solid #e2e8f0;
     border-radius: 10px;
     font-size: 1em;
     font-family: 'Tajawal', sans-serif;
-    min-width: 150px;
+    background: white;
+    transition: all 0.3s;
 }
 
-.form-row input:focus {
+.input-group input:focus {
     outline: none;
     border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.2);
+    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
 }
 
 .btn-add-debt {
-    padding: 10px 25px;
-    background: #48bb78;
+    padding: 10px 30px;
+    background: linear-gradient(135deg, #48bb78, #38a169);
     color: white;
     border: none;
     border-radius: 10px;
     cursor: pointer;
-    font-weight: 500;
+    font-weight: 600;
     font-family: 'Tajawal', sans-serif;
     transition: all 0.3s;
+    font-size: 1em;
+    min-width: 120px;
 }
 
 .btn-add-debt:hover {
-    background: #38a169;
     transform: translateY(-2px);
-    box-shadow: 0 5px 15px rgba(72, 187, 120, 0.4);
+    box-shadow: 0 5px 20px rgba(72, 187, 120, 0.4);
 }
 
-/* جدول الديون */
+/* ===== جدول الديون ===== */
 .debt-table-wrapper {
     background: white;
     border-radius: 15px;
     overflow-x: auto;
-    margin-bottom: 20px;
+    border: 1px solid #e2e8f0;
 }
 
 .debt-table {
     width: 100%;
     border-collapse: collapse;
+    font-size: 0.95em;
 }
 
 .debt-table thead {
-    background: #667eea;
+    background: linear-gradient(135deg, #667eea, #764ba2);
     color: white;
 }
 
 .debt-table th {
     padding: 15px;
     text-align: right;
-    font-weight: 500;
+    font-weight: 600;
+    white-space: nowrap;
 }
 
 .debt-table td {
@@ -339,11 +524,11 @@ header h1 {
 }
 
 .btn-edit, .btn-delete {
-    padding: 5px 12px;
+    padding: 6px 14px;
     border: none;
     border-radius: 8px;
     cursor: pointer;
-    font-size: 14px;
+    font-size: 13px;
     transition: all 0.3s;
     font-family: 'Tajawal', sans-serif;
 }
@@ -368,45 +553,11 @@ header h1 {
     transform: scale(1.05);
 }
 
-/* إجمالي الديون */
-.total-debt {
-    background: linear-gradient(135deg, #667eea, #764ba2);
-    color: white;
-    padding: 15px 20px;
-    border-radius: 12px;
-    font-size: 1.2em;
-    text-align: center;
-}
-
-.total-debt span {
-    font-weight: 700;
-    font-size: 1.3em;
-}
-
-/* رسائل التنبيه */
-.alert {
-    padding: 12px 20px;
-    border-radius: 10px;
-    margin-bottom: 15px;
-    display: none;
-}
-
-.alert-success {
-    background: #c6f6d5;
-    color: #22543d;
-    border-right: 4px solid #48bb78;
-}
-
-.alert-error {
-    background: #fed7d7;
-    color: #9b2c2c;
-    border-right: 4px solid #fc8181;
-}
-
-/* متجاوب */
+/* ===== متجاوب ===== */
 @media (max-width: 768px) {
     .container {
         padding: 15px;
+        border-radius: 20px;
     }
     
     header {
@@ -425,18 +576,62 @@ header h1 {
     
     .form-group input, .form-row input {
         width: 100%;
+        min-width: unset;
+    }
+    
+    .btn-add-person, .btn-add-debt {
+        width: 100%;
     }
     
     .persons-grid {
-        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 15px;
+    }
+    
+    .details-overlay {
+        padding: 20px;
+        max-height: 95vh;
+    }
+    
+    .quick-stats {
+        grid-template-columns: 1fr;
     }
     
     .debt-table {
-        font-size: 0.9em;
+        font-size: 0.85em;
     }
     
     .btn-edit, .btn-delete {
-        padding: 4px 8px;
+        padding: 4px 10px;
         font-size: 12px;
     }
 }
+
+@media (max-width: 480px) {
+    body {
+        padding: 10px;
+    }
+    
+    .container {
+        padding: 10px;
+    }
+    
+    header h1 {
+        font-size: 1.5em;
+    }
+    
+    .persons-grid {
+        grid-template-columns: 1fr 1fr;
+        gap: 10px;
+    }
+    
+    .person-card {
+        padding: 15px;
+    }
+    
+    .person-card .avatar {
+        width: 45px;
+        height: 45px;
+        font-size: 1.2em;
+    }
+    }
