@@ -17,10 +17,10 @@
                 <h1>دفتر الديون</h1>
             </div>
             <div class="header-actions">
-                <button onclick="exportBackup()" class="icon-btn" title="نسخة احتياطية">
+                <button onclick="window.exportBackup()" class="icon-btn" title="نسخة احتياطية">
                     <i class="fas fa-download"></i>
                 </button>
-                <button onclick="importBackup()" class="icon-btn" title="استعادة">
+                <button onclick="window.importBackup()" class="icon-btn" title="استعادة">
                     <i class="fas fa-upload"></i>
                 </button>
             </div>
@@ -52,7 +52,7 @@
     </main>
 
     <!-- زر إضافة عائم (FAB) -->
-    <button id="fabAddPerson" class="fab-button" onclick="openAddPersonModal()">
+    <button id="fabAddPerson" class="fab-button" onclick="window.openAddPersonModal()">
         <i class="fas fa-plus"></i>
     </button>
 
@@ -61,14 +61,14 @@
         <div class="modal-content">
             <div class="modal-header">
                 <h3><i class="fas fa-user-plus"></i> إضافة شخص جديد</h3>
-                <button class="modal-close" onclick="closeAddPersonModal()">&times;</button>
+                <button class="modal-close" onclick="window.closeAddPersonModal()">&times;</button>
             </div>
             <div class="modal-body">
                 <div class="input-group-modal">
                     <label>اسم الشخص</label>
                     <input type="text" id="personNameInput" placeholder="أدخل اسم العميل..." />
                 </div>
-                <button onclick="addPerson()" class="btn-save-person">
+                <button onclick="window.addPerson()" class="btn-save-person">
                     <i class="fas fa-save"></i> حفظ
                 </button>
                 <div id="addPersonMessage" class="message-box"></div>
@@ -81,7 +81,7 @@
         <div class="modal-content modal-large">
             <div class="modal-header">
                 <h3 id="selectedPersonName"><i class="fas fa-user"></i> </h3>
-                <button class="modal-close" onclick="closePersonDetails()">&times;</button>
+                <button class="modal-close" onclick="window.closePersonDetails()">&times;</button>
             </div>
             <div class="modal-body">
                 <!-- إحصائيات العميل -->
@@ -109,7 +109,7 @@
                             <label>التاريخ</label>
                             <input type="date" id="debtDateInput" />
                         </div>
-                        <button onclick="addDebt()" class="btn-add-debt-small">
+                        <button onclick="window.addDebt()" class="btn-add-debt-small">
                             <i class="fas fa-plus"></i>
                         </button>
                     </div>
@@ -130,14 +130,15 @@
         <div class="modal-content modal-small">
             <div class="modal-header">
                 <h3><i class="fas fa-exclamation-triangle" style="color:#fc8181;"></i> تأكيد الحذف</h3>
+                <button class="modal-close" onclick="window.closeConfirmModal()">&times;</button>
             </div>
             <div class="modal-body">
                 <p id="confirmMessage">هل أنت متأكد من حذف هذا العنصر؟</p>
                 <div class="confirm-actions">
-                    <button onclick="confirmDelete()" class="btn-confirm-delete">
+                    <button onclick="window.confirmDelete()" class="btn-confirm-delete">
                         <i class="fas fa-trash"></i> حذف
                     </button>
-                    <button onclick="closeConfirmModal()" class="btn-confirm-cancel">
+                    <button onclick="window.closeConfirmModal()" class="btn-confirm-cancel">
                         إلغاء
                     </button>
                 </div>
@@ -158,25 +159,8 @@
         }
     </script>
 
-    <script type="module">
-        import { db } from './js/firebase-config.js';
-        import { 
-            collection, addDoc, getDocs, deleteDoc, doc, 
-            updateDoc, query, where, onSnapshot 
-        } from "firebase/firestore";
-
-        window.db = db;
-        window.collection = collection;
-        window.addDoc = addDoc;
-        window.getDocs = getDocs;
-        window.deleteDoc = deleteDoc;
-        window.doc = doc;
-        window.updateDoc = updateDoc;
-        window.query = query;
-        window.where = where;
-        window.onSnapshot = onSnapshot;
-    </script>
-
+    <!-- تحميل الملفات -->
+    <script type="module" src="js/firebase-config.js"></script>
     <script type="module" src="js/app.js"></script>
     <script type="module" src="js/backup.js"></script>
 </body>
