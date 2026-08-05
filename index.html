@@ -16,7 +16,7 @@
                 <i class="fas fa-book-open header-icon"></i>
                 <div>
                     <h1>دفتر الديون</h1>
-                    <span class="header-subtitle">تخزين سحابي 💾</span>
+                    <span class="header-subtitle">💾 سحابي بالكامل</span>
                 </div>
             </div>
             <div class="header-actions">
@@ -25,6 +25,9 @@
                 </button>
                 <button id="btnRestore" class="header-btn" title="استعادة">
                     <i class="fas fa-cloud-upload-alt"></i>
+                </button>
+                <button id="btnRefresh" class="header-btn" title="تحديث">
+                    <i class="fas fa-sync-alt"></i>
                 </button>
             </div>
         </div>
@@ -57,6 +60,11 @@
             <span class="stat-number" id="totalAmount">0</span>
             <span class="stat-label">ل.س</span>
         </div>
+    </div>
+
+    <!-- مؤشر التحميل -->
+    <div id="loadingIndicator" class="loading-indicator" style="display:none;">
+        <i class="fas fa-spinner fa-spin"></i> جاري التحميل...
     </div>
 
     <!-- قائمة العملاء -->
