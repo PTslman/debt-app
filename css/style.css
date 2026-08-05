@@ -7,10 +7,7 @@
 :root {
     --primary: #25D366;
     --primary-dark: #128C7E;
-    --primary-light: #DCF8C6;
-    --secondary: #34B7F1;
     --background: #ECE5DD;
-    --chat-bg: #FFFFFF;
     --text-primary: #1A1A1A;
     --text-secondary: #667781;
     --border-color: #E9EDEF;
@@ -39,9 +36,6 @@ body {
 ::-webkit-scrollbar-thumb {
     background: #CBD5E0;
     border-radius: 10px;
-}
-::-webkit-scrollbar-thumb:hover {
-    background: #A0AEC0;
 }
 
 /* ===== Header ===== */
@@ -269,7 +263,7 @@ body {
     width: 52px;
     height: 52px;
     border-radius: 50%;
-    background: linear-gradient(135deg, var(--primary), var(--secondary));
+    background: linear-gradient(135deg, var(--primary), #34B7F1);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -288,9 +282,6 @@ body {
     font-weight: 700;
     font-size: 1rem;
     color: var(--text-primary);
-    display: flex;
-    align-items: center;
-    gap: 8px;
 }
 
 .chat-preview {
@@ -319,17 +310,6 @@ body {
 .chat-date {
     font-size: 0.7rem;
     color: var(--text-secondary);
-}
-
-.chat-badge {
-    background: var(--primary);
-    color: white;
-    font-size: 0.65rem;
-    font-weight: 700;
-    padding: 2px 10px;
-    border-radius: 20px;
-    min-width: 20px;
-    text-align: center;
 }
 
 /* ===== FAB Button ===== */
@@ -734,11 +714,11 @@ body {
 
 .btn-edit-debt {
     background: #EBF5FF;
-    color: var(--secondary);
+    color: #34B7F1;
 }
 
 .btn-edit-debt:hover {
-    background: var(--secondary);
+    background: #34B7F1;
     color: white;
 }
 
@@ -1008,4 +988,4 @@ body {
     .total-amount {
         font-size: 1.5rem;
     }
-}
+    }
