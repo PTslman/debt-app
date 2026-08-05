@@ -3,71 +3,79 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <meta name="description" content="دفتر الديون - إدارة الديون بذكاء وأمان" />
+    <meta name="theme-color" content="#25D366" />
     <title>📊 دفتر الديون</title>
     <link rel="stylesheet" href="css/style.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+    <link rel="icon" href="assets/icons/favicon.ico" type="image/x-icon" />
 </head>
 <body>
-    <!-- رأس التطبيق -->
+
+    <!-- ===== HEADER ===== -->
     <header class="app-header">
         <div class="header-content">
             <div class="header-left">
                 <i class="fas fa-book-open header-icon"></i>
                 <div>
                     <h1>دفتر الديون</h1>
-                    <span class="header-subtitle">💾 سحابي بالكامل</span>
+                    <span class="header-subtitle" id="headerSubtitle">💾 سحابي بالكامل</span>
                 </div>
             </div>
             <div class="header-actions">
+                <button id="btnRefresh" class="header-btn" title="تحديث">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
                 <button id="btnBackup" class="header-btn" title="نسخة احتياطية">
                     <i class="fas fa-cloud-download-alt"></i>
                 </button>
                 <button id="btnRestore" class="header-btn" title="استعادة">
                     <i class="fas fa-cloud-upload-alt"></i>
                 </button>
-                <button id="btnRefresh" class="header-btn" title="تحديث">
-                    <i class="fas fa-sync-alt"></i>
+                <button id="btnLogout" class="header-btn" title="تسجيل الخروج" style="display:none;">
+                    <i class="fas fa-sign-out-alt"></i>
                 </button>
             </div>
         </div>
     </header>
 
-    <!-- شريط البحث -->
+    <!-- ===== SEARCH BAR ===== -->
     <div class="search-bar">
         <div class="search-container">
             <i class="fas fa-search search-icon"></i>
-            <input type="text" id="searchInput" placeholder="بحث عن عميل..." />
+            <input type="text" id="searchInput" placeholder="🔍 بحث عن عميل..." />
             <button id="btnClearSearch" class="clear-search" style="display:none;">
                 <i class="fas fa-times-circle"></i>
             </button>
         </div>
     </div>
 
-    <!-- إحصائيات سريعة -->
+    <!-- ===== STATISTICS ===== -->
     <div class="stats-container">
         <div class="stat-item">
             <span class="stat-number" id="totalPersons">0</span>
-            <span class="stat-label">عملاء</span>
+            <span class="stat-label">👥 عملاء</span>
         </div>
         <div class="stat-divider"></div>
         <div class="stat-item">
             <span class="stat-number" id="totalDebts">0</span>
-            <span class="stat-label">ديون</span>
+            <span class="stat-label">📝 ديون</span>
         </div>
         <div class="stat-divider"></div>
         <div class="stat-item">
             <span class="stat-number" id="totalAmount">0</span>
-            <span class="stat-label">ل.س</span>
+            <span class="stat-label">💰 ل.س</span>
         </div>
     </div>
 
-    <!-- مؤشر التحميل -->
+    <!-- ===== LOADING ===== -->
     <div id="loadingIndicator" class="loading-indicator" style="display:none;">
-        <i class="fas fa-spinner fa-spin"></i> جاري التحميل...
+        <i class="fas fa-spinner fa-spin"></i>
+        <span>جاري التحميل...</span>
     </div>
 
-    <!-- قائمة العملاء -->
+    <!-- ===== PERSONS LIST ===== -->
     <div class="chat-list" id="chatList">
         <div class="empty-state">
             <i class="fas fa-users empty-icon"></i>
@@ -76,12 +84,12 @@
         </div>
     </div>
 
-    <!-- زر الإضافة العائم -->
+    <!-- ===== FAB BUTTON ===== -->
     <button id="fabAddPerson" class="fab-button">
         <i class="fas fa-plus"></i>
     </button>
 
-    <!-- مودال إضافة/تعديل عميل -->
+    <!-- ===== MODAL: ADD/EDIT PERSON ===== -->
     <div id="personModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -92,21 +100,21 @@
             </div>
             <div class="modal-body">
                 <div class="form-group">
-                    <label>اسم العميل</label>
+                    <label>اسم العميل <span class="required">*</span></label>
                     <div class="input-with-icon">
                         <i class="fas fa-user input-icon"></i>
-                        <input type="text" id="personNameInput" placeholder="أدخل اسم العميل..." />
+                        <input type="text" id="personNameInput" placeholder="أدخل اسم العميل..." maxlength="100" />
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>المبلغ (ل.س)</label>
+                    <label>المبلغ (ل.س) <span class="required">*</span></label>
                     <div class="input-with-icon">
                         <i class="fas fa-money-bill-wave input-icon"></i>
-                        <input type="number" id="personAmountInput" placeholder="0" />
+                        <input type="number" id="personAmountInput" placeholder="0" min="0" step="1" />
                     </div>
                 </div>
                 <div class="form-group">
-                    <label>التاريخ</label>
+                    <label>التاريخ <span class="required">*</span></label>
                     <div class="input-with-icon">
                         <i class="fas fa-calendar-alt input-icon"></i>
                         <input type="date" id="personDateInput" />
@@ -120,7 +128,7 @@
         </div>
     </div>
 
-    <!-- مودال تفاصيل العميل -->
+    <!-- ===== MODAL: CLIENT DETAILS ===== -->
     <div id="clientModal" class="modal modal-full">
         <div class="modal-content modal-large">
             <div class="modal-header client-header">
@@ -132,10 +140,10 @@
                     </div>
                 </div>
                 <div class="client-header-actions">
-                    <button id="btnEditClient" class="header-btn-icon" title="تعديل العميل">
+                    <button id="btnEditClient" class="header-btn-icon" title="تعديل">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button id="btnDeleteClient" class="header-btn-icon" title="حذف العميل">
+                    <button id="btnDeleteClient" class="header-btn-icon" title="حذف">
                         <i class="fas fa-trash"></i>
                     </button>
                     <button class="modal-close" id="closeClientModal">
@@ -144,7 +152,6 @@
                 </div>
             </div>
             <div class="modal-body">
-                <!-- إجمالي العميل -->
                 <div class="client-total-card">
                     <div>
                         <span class="total-label">إجمالي الديون</span>
@@ -152,12 +159,10 @@
                         <span class="total-currency">ل.س</span>
                     </div>
                 </div>
-
-                <!-- نموذج إضافة دين -->
                 <div class="add-debt-card">
                     <div class="debt-form">
                         <div class="debt-input">
-                            <input type="number" id="debtAmountInput" placeholder="المبلغ" />
+                            <input type="number" id="debtAmountInput" placeholder="💵 المبلغ" min="0" step="1" />
                         </div>
                         <div class="debt-input">
                             <input type="date" id="debtDateInput" />
@@ -168,46 +173,64 @@
                     </div>
                     <div id="debtMessage" class="message-box"></div>
                 </div>
-
-                <!-- قائمة الديون -->
                 <div class="debts-list">
+                    <h4><i class="fas fa-list"></i> سجل الديون</h4>
                     <div id="debtsContainer" class="debts-items"></div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- مودال تأكيد الحذف -->
+    <!-- ===== MODAL: CONFIRM DELETE ===== -->
     <div id="confirmModal" class="modal">
         <div class="modal-content modal-small">
             <div class="modal-header">
                 <h3><i class="fas fa-exclamation-triangle" style="color:#fc8181;"></i> تأكيد</h3>
-                <button class="modal-close" id="closeConfirmModalBtn">&times;</button>
+                <button class="modal-close" id="closeConfirmModalBtn">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
             <div class="modal-body">
                 <p id="confirmMessage">هل أنت متأكد؟</p>
                 <div class="confirm-actions">
-                    <button id="btnConfirmDelete" class="btn-danger">حذف</button>
-                    <button id="btnConfirmCancel" class="btn-secondary">إلغاء</button>
+                    <button id="btnConfirmDelete" class="btn-danger">
+                        <i class="fas fa-trash"></i> حذف
+                    </button>
+                    <button id="btnConfirmCancel" class="btn-secondary">
+                        إلغاء
+                    </button>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Toast Notifications -->
+    <!-- ===== TOAST CONTAINER ===== -->
     <div id="toastContainer"></div>
 
-    <!-- Firebase -->
+    <!-- ===== FIREBASE IMPORTS ===== -->
     <script type="importmap">
         {
             "imports": {
                 "firebase/app": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js",
-                "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js"
+                "firebase/firestore": "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js",
+                "firebase/auth": "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js",
+                "firebase/storage": "https://www.gstatic.com/firebasejs/10.7.1/firebase-storage.js",
+                "firebase/analytics": "https://www.gstatic.com/firebasejs/10.7.1/firebase-analytics.js",
+                "firebase/performance": "https://www.gstatic.com/firebasejs/10.7.1/firebase-performance.js",
+                "firebase/remote-config": "https://www.gstatic.com/firebasejs/10.7.1/firebase-remote-config.js",
+                "firebase/app-check": "https://www.gstatic.com/firebasejs/10.7.1/firebase-app-check.js"
             }
         }
     </script>
 
+    <!-- ===== APPLICATION SCRIPTS ===== -->
     <script type="module" src="js/firebase-config.js"></script>
+    <script type="module" src="js/encryption.js"></script>
+    <script type="module" src="js/validation.js"></script>
+    <script type="module" src="js/security.js"></script>
+    <script type="module" src="js/auth.js"></script>
+    <script type="module" src="js/backup.js"></script>
     <script type="module" src="js/app.js"></script>
+
 </body>
-</html>
+        </html>
