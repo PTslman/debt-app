@@ -4,7 +4,7 @@ import {
     updateDoc, query, where, onSnapshot, orderBy, writeBatch 
 } from "firebase/firestore";
 
-console.log('🚀 App started');
+console.log('🚀 App started - Firebase Only Storage');
 
 // ===== المتغيرات =====
 let currentPersonId = null;
@@ -136,6 +136,7 @@ async function savePerson() {
     
     try {
         if (editingPerson) {
+            // تعديل في Firebase فقط
             await updateDoc(doc(db, "persons", editingPerson.id), {
                 name: name,
                 amount: Number(amount),
@@ -144,6 +145,7 @@ async function savePerson() {
             });
             showToast('✅ تم تعديل العميل', 'success');
         } else {
+            // التحقق من الاسم المكرر
             const q = query(collection(db, "persons"), where("name", "==", name));
             const snapshot = await getDocs(q);
             
@@ -156,6 +158,7 @@ async function savePerson() {
                 return;
             }
             
+            // إضافة إلى Firebase فقط
             await addDoc(collection(db, "persons"), {
                 name: name,
                 amount: Number(amount),
@@ -165,8 +168,11 @@ async function savePerson() {
             showToast(`✅ تم إضافة "${name}"`, 'success');
         }
         
+        // إغلاق المودال والعودة للواجهة الرئيسية
         closeModal('personModal');
         editingPerson = null;
+        
+        // التحديث التلقائي سيحدث عبر onSnapshot
         
     } catch (error) {
         console.error('Error:', error);
@@ -177,7 +183,7 @@ async function savePerson() {
     }
 }
 
-// ===== تحميل العملاء =====
+// ===== تحميل العملاء من Firebase فقط =====
 function loadPersons() {
     const q = query(collection(db, "persons"), orderBy("createdAt", "desc"));
     
@@ -214,7 +220,7 @@ function loadPersons() {
             
         } catch (error) {
             console.error('Error loading persons:', error);
-            showToast('❌ خطأ في تحميل البيانات', 'error');
+            showToast('❌ خطأ في تحميل البيانات من Firebase', 'error');
         }
     }, (error) => {
         console.error('Snapshot error:', error);
@@ -248,7 +254,6 @@ function renderPersons(persons) {
         const amount = person.amount || 0;
         const date = person.date ? formatDate(person.date) : '';
         
-        // حساب عدد الديون لكل شخص (سيتم تحديثه لاحقاً)
         html += `
             <div class="chat-item" data-id="${person.id}">
                 <div class="chat-avatar">${firstLetter}</div>
@@ -288,7 +293,6 @@ async function openClientDetails(person) {
     document.getElementById('clientTotalAmount').textContent = '0';
     document.getElementById('clientDebtCount').textContent = '0 ديون';
     
-    // تخزين بيانات العميل للتعديل
     document.getElementById('clientName').dataset.personId = person.id;
     document.getElementById('clientName').dataset.personData = JSON.stringify(person);
     
@@ -308,7 +312,7 @@ function closeClientDetails() {
     currentDebtId = null;
 }
 
-// ===== تحميل الديون =====
+// ===== تحميل الديون من Firebase فقط =====
 function loadDebts(personId) {
     const q = query(collection(db, "debts"), where("personId", "==", personId), orderBy("date", "desc"));
     
@@ -419,6 +423,7 @@ async function addDebt() {
     
     try {
         if (currentDebtId) {
+            // تعديل في Firebase فقط
             await updateDoc(doc(db, "debts", currentDebtId), {
                 amount: Number(amount),
                 date: date
@@ -426,6 +431,7 @@ async function addDebt() {
             showToast('✅ تم تعديل الدين', 'success');
             currentDebtId = null;
         } else {
+            // إضافة إلى Firebase فقط
             await addDoc(collection(db, "debts"), {
                 personId: currentPersonId,
                 amount: Number(amount),
@@ -481,6 +487,7 @@ async function confirmDelete() {
     
     try {
         if (deleteType === 'person') {
+            // حذف من Firebase فقط
             const debtsQuery = query(collection(db, "debts"), where("personId", "==", deleteTarget));
             const debtsSnapshot = await getDocs(debtsQuery);
             
@@ -496,6 +503,7 @@ async function confirmDelete() {
             
             showToast('✅ تم حذف العميل وديونه', 'success');
         } else if (deleteType === 'debt') {
+            // حذف من Firebase فقط
             await deleteDoc(doc(db, "debts", deleteTarget));
             showToast('✅ تم حذف الدين', 'success');
         }
@@ -546,7 +554,7 @@ function clearSearch() {
     renderPersons(allPersons);
 }
 
-// ===== Backup =====
+// ===== Backup من Firebase فقط =====
 async function exportBackup() {
     try {
         const personsSnapshot = await getDocs(collection(db, "persons"));
@@ -601,6 +609,7 @@ function importBackup() {
                 return;
             }
             
+            // حذف كل البيانات من Firebase
             const personsSnapshot = await getDocs(collection(db, "persons"));
             const debtsSnapshot = await getDocs(collection(db, "debts"));
             const batch = writeBatch(db);
@@ -613,6 +622,7 @@ function importBackup() {
             }
             await batch.commit();
             
+            // إضافة البيانات الجديدة إلى Firebase
             for (const person of data.persons) {
                 const { id, ...personData } = person;
                 await addDoc(collection(db, "persons"), personData);
@@ -638,7 +648,7 @@ function importBackup() {
 
 // ===== ربط الأحداث =====
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('✅ DOM ready');
+    console.log('✅ DOM ready - Firebase Only');
     
     // زر إضافة عميل
     document.getElementById('fabAddPerson').addEventListener('click', () => openPersonModal(null));
@@ -696,8 +706,8 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     
-    // تحميل البيانات
+    // تحميل البيانات من Firebase
     loadPersons();
 });
 
-console.log('✅ App ready');
+console.log('✅ App ready - All data stored in Firebase Cloud');
