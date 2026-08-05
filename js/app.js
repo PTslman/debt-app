@@ -6,7 +6,7 @@ import {
 
 console.log('🚀 App started');
 
-// ===== المتغيرات =====
+// ===== المتغيرات العامة =====
 let currentPersonId = null;
 let currentDebtId = null;
 let editingPerson = null;
@@ -14,11 +14,16 @@ let deleteTarget = null;
 let deleteType = null;
 let allPersons = [];
 let isSaving = false;
+let unsubscribePersons = null;
+let unsubscribeDebts = null;
 
-// ===== Toast =====
+// ===== Toast Notifications =====
 function showToast(message, type = 'success') {
     const container = document.getElementById('toastContainer');
-    if (!container) return;
+    if (!container) {
+        console.warn('Toast container not found');
+        return;
+    }
     
     const colors = {
         success: '#25D366',
@@ -27,7 +32,6 @@ function showToast(message, type = 'success') {
     };
     
     const toast = document.createElement('div');
-    toast.className = `toast toast-${type}`;
     toast.style.cssText = `
         padding: 14px 20px;
         border-radius: 12px;
@@ -41,6 +45,7 @@ function showToast(message, type = 'success') {
         direction: rtl;
         animation: slideRight 0.4s ease;
         max-width: 350px;
+        z-index: 9999;
     `;
     toast.textContent = message;
     container.appendChild(toast);
@@ -61,6 +66,8 @@ function openModal(id) {
         modal.style.display = 'flex';
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
+    } else {
+        console.warn(`Modal ${id} not found`);
     }
 }
 
@@ -73,9 +80,28 @@ function closeModal(id) {
     }
 }
 
+// ===== اختبار الاتصال بقاعدة البيانات =====
+async function testFirebaseConnection() {
+    try {
+        console.log('🔍 جاري اختبار الاتصال بـ Firebase...');
+        const testRef = collection(db, "persons");
+        const snapshot = await getDocs(testRef);
+        console.log(`✅ Firebase متصل بنجاح! عدد العملاء: ${snapshot.size}`);
+        return true;
+    } catch (error) {
+        console.error('❌ فشل الاتصال بـ Firebase:', error);
+        console.error('📋 تفاصيل الخطأ:', error.message);
+        showToast('❌ فشل الاتصال بقاعدة البيانات: ' + error.message, 'error');
+        return false;
+    }
+}
+
 // ===== إضافة/تعديل عميل =====
-function openPersonModal(person = null) {
-    if (isSaving) return;
+window.openPersonModal = function(person = null) {
+    if (isSaving) {
+        showToast('⏳ يرجى الانتظار حتى انتهاء الحفظ', 'warning');
+        return;
+    }
     
     editingPerson = person;
     const modalTitle = document.getElementById('modalTitle');
@@ -83,6 +109,11 @@ function openPersonModal(person = null) {
     const amountInput = document.getElementById('personAmountInput');
     const dateInput = document.getElementById('personDateInput');
     const messageBox = document.getElementById('personMessage');
+    
+    if (!modalTitle || !nameInput || !amountInput || !dateInput) {
+        console.error('❌ عناصر النموذج غير موجودة');
+        return;
+    }
     
     messageBox.className = 'message-box';
     messageBox.style.display = 'none';
@@ -102,16 +133,25 @@ function openPersonModal(person = null) {
     
     openModal('personModal');
     setTimeout(() => nameInput.focus(), 200);
-}
+};
 
-async function savePerson() {
-    if (isSaving) return;
+window.savePerson = async function() {
+    if (isSaving) {
+        console.log('⏳ جاري الحفظ... يرجى الانتظار');
+        showToast('⏳ جاري الحفظ...', 'warning');
+        return;
+    }
     
     const nameInput = document.getElementById('personNameInput');
     const amountInput = document.getElementById('personAmountInput');
     const dateInput = document.getElementById('personDateInput');
     const messageBox = document.getElementById('personMessage');
     const saveBtn = document.getElementById('btnSavePerson');
+    
+    if (!nameInput || !amountInput || !dateInput || !messageBox || !saveBtn) {
+        console.error('❌ عناصر النموذج غير موجودة');
+        return;
+    }
     
     const name = nameInput.value.trim();
     const amount = amountInput.value.trim();
@@ -121,7 +161,7 @@ async function savePerson() {
     messageBox.style.display = 'none';
     messageBox.textContent = '';
     
-    // التحقق من المدخلات
+    // === التحقق من المدخلات ===
     if (!name) {
         messageBox.textContent = '⚠️ الرجاء إدخال اسم العميل';
         messageBox.className = 'message-box error show';
@@ -146,23 +186,28 @@ async function savePerson() {
         return;
     }
     
-    // تعطيل الزر لمنع الضغط المتكرر
+    // === تعطيل الزر ===
     isSaving = true;
     saveBtn.disabled = true;
     saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...';
     
+    console.log('📝 جاري حفظ البيانات:', { name, amount, date });
+    
     try {
         if (editingPerson) {
-            // تعديل عميل موجود
+            // === تعديل عميل موجود ===
+            console.log('✏️ تعديل عميل:', editingPerson.id);
             await updateDoc(doc(db, "persons", editingPerson.id), {
                 name: name,
                 amount: Number(amount),
                 date: date,
                 updatedAt: new Date().toISOString()
             });
+            console.log('✅ تم تعديل العميل بنجاح');
             showToast('✅ تم تعديل العميل', 'success');
         } else {
-            // التحقق من الاسم المكرر
+            // === التحقق من الاسم المكرر ===
+            console.log('🔍 التحقق من الاسم المكرر...');
             const q = query(collection(db, "persons"), where("name", "==", name));
             const snapshot = await getDocs(q);
             
@@ -178,48 +223,62 @@ async function savePerson() {
                 return;
             }
             
-            // إضافة عميل جديد
-            await addDoc(collection(db, "persons"), {
+            // === إضافة عميل جديد ===
+            console.log('➕ إضافة عميل جديد...');
+            const docRef = await addDoc(collection(db, "persons"), {
                 name: name,
                 amount: Number(amount),
                 date: date,
                 createdAt: new Date().toISOString()
             });
+            console.log('✅ تم إضافة العميل، ID:', docRef.id);
             showToast(`✅ تم إضافة "${name}"`, 'success');
         }
         
-        // إغلاق المودال فوراً
+        // === إغلاق المودال ===
+        console.log('🔒 إغلاق المودال');
         closeModal('personModal');
         editingPerson = null;
         
-        // إعادة تعيين الحقول
+        // === إعادة تعيين الحقول ===
         nameInput.value = '';
         amountInput.value = '';
         dateInput.value = new Date().toISOString().split('T')[0];
         
     } catch (error) {
-        console.error('Error saving:', error);
+        console.error('❌ خطأ في الحفظ:', error);
+        console.error('📋 تفاصيل الخطأ:', error.message);
+        console.error('📋 Stack Trace:', error.stack);
+        
         messageBox.textContent = `❌ ${error.message}`;
         messageBox.className = 'message-box error show';
         messageBox.style.display = 'block';
-        showToast('❌ خطأ في الحفظ', 'error');
+        showToast('❌ خطأ في الحفظ: ' + error.message, 'error');
     } finally {
         isSaving = false;
         saveBtn.disabled = false;
         saveBtn.innerHTML = '<i class="fas fa-save"></i> حفظ';
+        console.log('🏁 انتهت عملية الحفظ');
     }
-}
+};
 
 // ===== تحميل العملاء =====
 function loadPersons() {
+    console.log('📋 بدء تحميل العملاء...');
     const loading = document.getElementById('loadingIndicator');
     if (loading) loading.style.display = 'flex';
     
     const q = query(collection(db, "persons"), orderBy("createdAt", "desc"));
     
-    // استخدام onSnapshot للتحديث التلقائي
-    const unsubscribe = onSnapshot(q, async (snapshot) => {
+    // إلغاء الاشتراك السابق
+    if (unsubscribePersons) {
+        unsubscribePersons();
+        unsubscribePersons = null;
+    }
+    
+    unsubscribePersons = onSnapshot(q, async (snapshot) => {
         try {
+            console.log('📦 تم استلام البيانات، عدد العملاء:', snapshot.size);
             const persons = snapshot.docs.map(doc => ({
                 id: doc.id,
                 ...doc.data()
@@ -227,8 +286,9 @@ function loadPersons() {
             
             allPersons = persons;
             
-            // تحديث الإحصائيات
-            document.getElementById('totalPersons').textContent = persons.length;
+            // === تحديث الإحصائيات ===
+            const totalPersonsEl = document.getElementById('totalPersons');
+            if (totalPersonsEl) totalPersonsEl.textContent = persons.length;
             
             let totalDebts = 0;
             let totalAmount = 0;
@@ -244,35 +304,42 @@ function loadPersons() {
                 });
             }
             
-            document.getElementById('totalDebts').textContent = totalDebts;
-            document.getElementById('totalAmount').textContent = totalAmount.toLocaleString();
+            const totalDebtsEl = document.getElementById('totalDebts');
+            const totalAmountEl = document.getElementById('totalAmount');
+            if (totalDebtsEl) totalDebtsEl.textContent = totalDebts;
+            if (totalAmountEl) totalAmountEl.textContent = totalAmount.toLocaleString();
             
+            // === عرض العملاء ===
             renderPersons(persons);
             
             if (loading) loading.style.display = 'none';
             
         } catch (error) {
-            console.error('Error loading persons:', error);
+            console.error('❌ خطأ في تحميل العملاء:', error);
             if (loading) loading.style.display = 'none';
             showToast('❌ خطأ في تحميل البيانات', 'error');
         }
     }, (error) => {
-        console.error('Snapshot error:', error);
+        console.error('❌ خطأ في الاشتراك:', error);
         if (loading) loading.style.display = 'none';
-        showToast('❌ خطأ في الاتصال بقاعدة البيانات', 'error');
+        showToast('❌ خطأ في الاتصال بقاعدة البيانات: ' + error.message, 'error');
     });
-    
-    // حفظ دالة إلغاء الاشتراك
-    window._unsubscribePersons = unsubscribe;
 }
 
+// ===== عرض العملاء =====
 function renderPersons(persons) {
     const container = document.getElementById('chatList');
-    const searchQuery = document.getElementById('searchInput').value.toLowerCase().trim();
+    if (!container) {
+        console.warn('chatList container not found');
+        return;
+    }
+    
+    const searchInput = document.getElementById('searchInput');
+    const searchQuery = searchInput ? searchInput.value.toLowerCase().trim() : '';
     
     let filtered = persons;
     if (searchQuery) {
-        filtered = persons.filter(p => p.name.toLowerCase().includes(searchQuery));
+        filtered = persons.filter(p => p.name && p.name.toLowerCase().includes(searchQuery));
     }
     
     if (filtered.length === 0) {
@@ -288,7 +355,7 @@ function renderPersons(persons) {
     
     let html = '';
     filtered.forEach(person => {
-        const firstLetter = person.name.charAt(0).toUpperCase();
+        const firstLetter = person.name ? person.name.charAt(0).toUpperCase() : '?';
         const amount = person.amount || 0;
         const date = person.date ? formatDate(person.date) : '';
         
@@ -296,7 +363,7 @@ function renderPersons(persons) {
             <div class="chat-item" data-id="${person.id}">
                 <div class="chat-avatar">${firstLetter}</div>
                 <div class="chat-info">
-                    <div class="chat-name">${person.name}</div>
+                    <div class="chat-name">${person.name || 'بدون اسم'}</div>
                     <div class="chat-preview">
                         <span class="amount">${Number(amount).toLocaleString()} ل.س</span>
                     </div>
@@ -310,7 +377,7 @@ function renderPersons(persons) {
     
     container.innerHTML = html;
     
-    // إضافة أحداث النقر
+    // === إضافة أحداث النقر ===
     container.querySelectorAll('.chat-item').forEach(item => {
         item.addEventListener('click', function() {
             const id = this.dataset.id;
@@ -323,44 +390,72 @@ function renderPersons(persons) {
 }
 
 // ===== تفاصيل العميل =====
-async function openClientDetails(person) {
+window.openClientDetails = async function(person) {
+    if (!person || !person.id) {
+        console.error('❌ بيانات العميل غير صالحة');
+        return;
+    }
+    
     currentPersonId = person.id;
     
-    document.getElementById('clientName').textContent = person.name;
-    document.getElementById('clientAvatar').textContent = person.name.charAt(0).toUpperCase();
-    document.getElementById('clientTotalAmount').textContent = '0';
-    document.getElementById('clientDebtCount').textContent = '0 ديون';
+    const clientName = document.getElementById('clientName');
+    const clientAvatar = document.getElementById('clientAvatar');
+    const clientTotalAmount = document.getElementById('clientTotalAmount');
+    const clientDebtCount = document.getElementById('clientDebtCount');
+    const debtAmountInput = document.getElementById('debtAmountInput');
+    const debtDateInput = document.getElementById('debtDateInput');
+    const debtMessage = document.getElementById('debtMessage');
     
-    document.getElementById('clientName').dataset.personId = person.id;
-    document.getElementById('clientName').dataset.personData = JSON.stringify(person);
+    if (clientName) clientName.textContent = person.name || 'بدون اسم';
+    if (clientAvatar) clientAvatar.textContent = person.name ? person.name.charAt(0).toUpperCase() : '?';
+    if (clientTotalAmount) clientTotalAmount.textContent = '0';
+    if (clientDebtCount) clientDebtCount.textContent = '0 ديون';
     
-    document.getElementById('debtAmountInput').value = '';
-    document.getElementById('debtDateInput').value = new Date().toISOString().split('T')[0];
-    document.getElementById('debtMessage').className = 'message-box';
-    document.getElementById('debtMessage').style.display = 'none';
-    document.getElementById('debtMessage').textContent = '';
+    if (clientName) {
+        clientName.dataset.personId = person.id;
+        clientName.dataset.personData = JSON.stringify(person);
+    }
+    
+    if (debtAmountInput) debtAmountInput.value = '';
+    if (debtDateInput) debtDateInput.value = new Date().toISOString().split('T')[0];
+    if (debtMessage) {
+        debtMessage.className = 'message-box';
+        debtMessage.style.display = 'none';
+        debtMessage.textContent = '';
+    }
+    
     currentDebtId = null;
     
     openModal('clientModal');
     loadDebts(person.id);
-}
+};
 
-function closeClientDetails() {
+window.closeClientDetails = function() {
     closeModal('clientModal');
     currentPersonId = null;
     currentDebtId = null;
-    // إلغاء الاشتراك من الديون
-    if (window._unsubscribeDebts) {
-        window._unsubscribeDebts();
-        window._unsubscribeDebts = null;
+    if (unsubscribeDebts) {
+        unsubscribeDebts();
+        unsubscribeDebts = null;
     }
-}
+};
 
 // ===== تحميل الديون =====
 function loadDebts(personId) {
+    if (!personId) {
+        console.warn('⚠️ personId غير موجود');
+        return;
+    }
+    
     const q = query(collection(db, "debts"), where("personId", "==", personId), orderBy("date", "desc"));
     
-    const unsubscribe = onSnapshot(q, (snapshot) => {
+    // إلغاء الاشتراك السابق
+    if (unsubscribeDebts) {
+        unsubscribeDebts();
+        unsubscribeDebts = null;
+    }
+    
+    unsubscribeDebts = onSnapshot(q, (snapshot) => {
         try {
             const debts = snapshot.docs.map(doc => ({
                 id: doc.id,
@@ -370,7 +465,10 @@ function loadDebts(personId) {
             const container = document.getElementById('debtsContainer');
             let total = 0;
             
-            document.getElementById('clientDebtCount').textContent = `${debts.length} ديون`;
+            const clientDebtCount = document.getElementById('clientDebtCount');
+            if (clientDebtCount) clientDebtCount.textContent = `${debts.length} ديون`;
+            
+            if (!container) return;
             
             if (debts.length === 0) {
                 container.innerHTML = `
@@ -379,7 +477,8 @@ function loadDebts(personId) {
                         <p>لا يوجد ديون مسجلة</p>
                     </div>
                 `;
-                document.getElementById('clientTotalAmount').textContent = '0';
+                const clientTotalAmount = document.getElementById('clientTotalAmount');
+                if (clientTotalAmount) clientTotalAmount.textContent = '0';
                 return;
             }
             
@@ -405,9 +504,10 @@ function loadDebts(personId) {
             });
             
             container.innerHTML = html;
-            document.getElementById('clientTotalAmount').textContent = total.toLocaleString();
+            const clientTotalAmount = document.getElementById('clientTotalAmount');
+            if (clientTotalAmount) clientTotalAmount.textContent = total.toLocaleString();
             
-            // أحداث التعديل والحذف
+            // === أحداث التعديل والحذف ===
             container.querySelectorAll('.btn-edit-debt').forEach(btn => {
                 btn.addEventListener('click', function(e) {
                     e.stopPropagation();
@@ -427,18 +527,16 @@ function loadDebts(personId) {
             });
             
         } catch (error) {
-            console.error('Error loading debts:', error);
+            console.error('❌ خطأ في تحميل الديون:', error);
         }
     }, (error) => {
-        console.error('Debts snapshot error:', error);
+        console.error('❌ خطأ في اشتراك الديون:', error);
         showToast('❌ خطأ في تحميل الديون', 'error');
     });
-    
-    window._unsubscribeDebts = unsubscribe;
 }
 
 // ===== إضافة دين =====
-async function addDebt() {
+window.addDebt = async function() {
     if (!currentPersonId) {
         showToast('⚠️ الرجاء اختيار عميل', 'warning');
         return;
@@ -448,6 +546,11 @@ async function addDebt() {
     const dateInput = document.getElementById('debtDateInput');
     const messageBox = document.getElementById('debtMessage');
     const addBtn = document.getElementById('btnAddDebt');
+    
+    if (!amountInput || !dateInput || !messageBox || !addBtn) {
+        console.error('❌ عناصر إضافة الدين غير موجودة');
+        return;
+    }
     
     const amount = amountInput.value;
     const date = dateInput.value;
@@ -496,7 +599,7 @@ async function addDebt() {
         amountInput.focus();
         
     } catch (error) {
-        console.error('Error:', error);
+        console.error('❌ خطأ في حفظ الدين:', error);
         messageBox.textContent = `❌ ${error.message}`;
         messageBox.className = 'message-box error show';
         messageBox.style.display = 'block';
@@ -505,42 +608,54 @@ async function addDebt() {
         addBtn.disabled = false;
         addBtn.innerHTML = '<i class="fas fa-plus"></i>';
     }
-}
+};
 
 // ===== تعديل دين =====
-function editDebt(id, amount, date) {
+window.editDebt = function(id, amount, date) {
     currentDebtId = id;
-    document.getElementById('debtAmountInput').value = amount;
-    document.getElementById('debtDateInput').value = date;
-    document.getElementById('debtAmountInput').focus();
-    document.getElementById('debtAmountInput').scrollIntoView({ behavior: 'smooth' });
+    const amountInput = document.getElementById('debtAmountInput');
+    const dateInput = document.getElementById('debtDateInput');
+    if (amountInput) amountInput.value = amount;
+    if (dateInput) dateInput.value = date;
+    if (amountInput) {
+        amountInput.focus();
+        amountInput.scrollIntoView({ behavior: 'smooth' });
+    }
     showToast('✏️ قم بتعديل المبلغ ثم اضغط +', 'warning');
-}
+};
 
 // ===== حذف دين =====
-function confirmDeleteDebt(id) {
+window.confirmDeleteDebt = function(id) {
     deleteTarget = id;
     deleteType = 'debt';
-    document.getElementById('confirmMessage').textContent = 'هل أنت متأكد من حذف هذا الدين؟';
+    const confirmMessage = document.getElementById('confirmMessage');
+    if (confirmMessage) confirmMessage.textContent = 'هل أنت متأكد من حذف هذا الدين؟';
     openModal('confirmModal');
-}
+};
 
 // ===== حذف عميل =====
-function confirmDeletePerson() {
+window.confirmDeletePerson = function() {
     deleteTarget = currentPersonId;
     deleteType = 'person';
-    const name = document.getElementById('clientName').textContent;
-    document.getElementById('confirmMessage').textContent = `هل أنت متأكد من حذف "${name}" وكل ديونه؟`;
+    const clientName = document.getElementById('clientName');
+    const name = clientName ? clientName.textContent : 'هذا العميل';
+    const confirmMessage = document.getElementById('confirmMessage');
+    if (confirmMessage) confirmMessage.textContent = `هل أنت متأكد من حذف "${name}" وكل ديونه؟`;
     openModal('confirmModal');
-}
+};
 
 // ===== تأكيد الحذف =====
-async function confirmDelete() {
-    if (!deleteTarget) return;
+window.confirmDelete = async function() {
+    if (!deleteTarget) {
+        showToast('⚠️ لا يوجد عنصر للحذف', 'warning');
+        return;
+    }
     
     const confirmBtn = document.getElementById('btnConfirmDelete');
-    confirmBtn.disabled = true;
-    confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    if (confirmBtn) {
+        confirmBtn.disabled = true;
+        confirmBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+    }
     
     try {
         if (deleteType === 'person') {
@@ -569,19 +684,21 @@ async function confirmDelete() {
         deleteType = null;
         
     } catch (error) {
-        console.error('Error:', error);
-        showToast('❌ خطأ في الحذف', 'error');
+        console.error('❌ خطأ في الحذف:', error);
+        showToast('❌ خطأ في الحذف: ' + error.message, 'error');
     } finally {
-        confirmBtn.disabled = false;
-        confirmBtn.innerHTML = 'حذف';
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            confirmBtn.innerHTML = 'حذف';
+        }
     }
-}
+};
 
-function closeConfirmModal() {
+window.closeConfirmModal = function() {
     closeModal('confirmModal');
     deleteTarget = null;
     deleteType = null;
-}
+};
 
 // ===== أدوات مساعدة =====
 function formatDate(dateString) {
@@ -594,37 +711,39 @@ function formatDate(dateString) {
 }
 
 // ===== بحث =====
-function handleSearch(e) {
+window.handleSearch = function(e) {
     const query = e.target.value;
     const clearBtn = document.getElementById('btnClearSearch');
     
-    if (query.length > 0) {
-        clearBtn.style.display = 'flex';
+    if (query && query.length > 0) {
+        if (clearBtn) clearBtn.style.display = 'flex';
     } else {
-        clearBtn.style.display = 'none';
+        if (clearBtn) clearBtn.style.display = 'none';
     }
     
     renderPersons(allPersons);
-}
+};
 
-function clearSearch() {
-    document.getElementById('searchInput').value = '';
-    document.getElementById('btnClearSearch').style.display = 'none';
+window.clearSearch = function() {
+    const searchInput = document.getElementById('searchInput');
+    const clearBtn = document.getElementById('btnClearSearch');
+    if (searchInput) searchInput.value = '';
+    if (clearBtn) clearBtn.style.display = 'none';
     renderPersons(allPersons);
-}
+};
 
 // ===== تحديث يدوي =====
-function refreshData() {
+window.refreshData = function() {
     showToast('🔄 جاري التحديث...', 'warning');
-    // إعادة تحميل العملاء
-    if (window._unsubscribePersons) {
-        window._unsubscribePersons();
+    if (unsubscribePersons) {
+        unsubscribePersons();
+        unsubscribePersons = null;
     }
     loadPersons();
-}
+};
 
 // ===== Backup =====
-async function exportBackup() {
+window.exportBackup = async function() {
     try {
         const personsSnapshot = await getDocs(collection(db, "persons"));
         const debtsSnapshot = await getDocs(collection(db, "debts"));
@@ -652,12 +771,12 @@ async function exportBackup() {
         
         showToast('✅ تم تصدير النسخة الاحتياطية', 'success');
     } catch (error) {
-        console.error('Export error:', error);
-        showToast('❌ خطأ في التصدير', 'error');
+        console.error('❌ خطأ في التصدير:', error);
+        showToast('❌ خطأ في التصدير: ' + error.message, 'error');
     }
-}
+};
 
-function importBackup() {
+window.importBackup = function() {
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json';
@@ -707,69 +826,144 @@ function importBackup() {
             setTimeout(() => location.reload(), 1500);
             
         } catch (error) {
-            console.error('Restore error:', error);
-            showToast('❌ خطأ في الاستعادة', 'error');
+            console.error('❌ خطأ في الاستعادة:', error);
+            showToast('❌ خطأ في الاستعادة: ' + error.message, 'error');
         }
         input.remove();
     };
     
     document.body.appendChild(input);
     input.click();
-}
+};
 
-// ===== ربط الأحداث =====
-document.addEventListener('DOMContentLoaded', () => {
+// ===== تهيئة التطبيق =====
+document.addEventListener('DOMContentLoaded', async () => {
     console.log('✅ DOM ready');
+    console.log('📋 تهيئة التطبيق...');
     
+    // === اختبار الاتصال ===
+    const connected = await testFirebaseConnection();
+    if (!connected) {
+        showToast('⚠️ تأكد من اتصال الإنترنت وقواعد Firebase', 'warning');
+    }
+    
+    // === ربط الأحداث ===
     // زر إضافة عميل
-    document.getElementById('fabAddPerson').addEventListener('click', () => openPersonModal(null));
+    const fabBtn = document.getElementById('fabAddPerson');
+    if (fabBtn) {
+        fabBtn.addEventListener('click', () => openPersonModal(null));
+    }
     
     // زر حفظ عميل
-    document.getElementById('btnSavePerson').addEventListener('click', savePerson);
+    const saveBtn = document.getElementById('btnSavePerson');
+    if (saveBtn) {
+        saveBtn.addEventListener('click', savePerson);
+    }
     
     // زر إضافة دين
-    document.getElementById('btnAddDebt').addEventListener('click', addDebt);
+    const addDebtBtn = document.getElementById('btnAddDebt');
+    if (addDebtBtn) {
+        addDebtBtn.addEventListener('click', addDebt);
+    }
     
     // إغلاق المودالات
-    document.getElementById('closePersonModal').addEventListener('click', () => {
-        if (!isSaving) closeModal('personModal');
-    });
-    document.getElementById('closeClientModal').addEventListener('click', closeClientDetails);
-    document.getElementById('closeConfirmModalBtn').addEventListener('click', closeConfirmModal);
-    document.getElementById('btnConfirmCancel').addEventListener('click', closeConfirmModal);
-    document.getElementById('btnConfirmDelete').addEventListener('click', confirmDelete);
+    const closePersonBtn = document.getElementById('closePersonModal');
+    if (closePersonBtn) {
+        closePersonBtn.addEventListener('click', () => {
+            if (!isSaving) closeModal('personModal');
+        });
+    }
+    
+    const closeClientBtn = document.getElementById('closeClientModal');
+    if (closeClientBtn) {
+        closeClientBtn.addEventListener('click', closeClientDetails);
+    }
+    
+    const closeConfirmBtn = document.getElementById('closeConfirmModalBtn');
+    if (closeConfirmBtn) {
+        closeConfirmBtn.addEventListener('click', closeConfirmModal);
+    }
+    
+    const confirmCancelBtn = document.getElementById('btnConfirmCancel');
+    if (confirmCancelBtn) {
+        confirmCancelBtn.addEventListener('click', closeConfirmModal);
+    }
+    
+    const confirmDeleteBtn = document.getElementById('btnConfirmDelete');
+    if (confirmDeleteBtn) {
+        confirmDeleteBtn.addEventListener('click', confirmDelete);
+    }
     
     // تعديل وحذف العميل
-    document.getElementById('btnEditClient').addEventListener('click', () => {
-        const personData = JSON.parse(document.getElementById('clientName').dataset.personData || '{}');
-        if (personData.id) {
-            closeClientDetails();
-            setTimeout(() => openPersonModal(personData), 400);
-        }
-    });
-    document.getElementById('btnDeleteClient').addEventListener('click', confirmDeletePerson);
+    const editClientBtn = document.getElementById('btnEditClient');
+    if (editClientBtn) {
+        editClientBtn.addEventListener('click', () => {
+            const clientName = document.getElementById('clientName');
+            if (clientName) {
+                const personData = JSON.parse(clientName.dataset.personData || '{}');
+                if (personData.id) {
+                    closeClientDetails();
+                    setTimeout(() => openPersonModal(personData), 400);
+                }
+            }
+        });
+    }
+    
+    const deleteClientBtn = document.getElementById('btnDeleteClient');
+    if (deleteClientBtn) {
+        deleteClientBtn.addEventListener('click', confirmDeletePerson);
+    }
     
     // بحث
-    document.getElementById('searchInput').addEventListener('input', handleSearch);
-    document.getElementById('btnClearSearch').addEventListener('click', clearSearch);
+    const searchInput = document.getElementById('searchInput');
+    if (searchInput) {
+        searchInput.addEventListener('input', handleSearch);
+    }
+    
+    const clearSearchBtn = document.getElementById('btnClearSearch');
+    if (clearSearchBtn) {
+        clearSearchBtn.addEventListener('click', clearSearch);
+    }
     
     // Backup و تحديث
-    document.getElementById('btnBackup').addEventListener('click', exportBackup);
-    document.getElementById('btnRestore').addEventListener('click', importBackup);
-    document.getElementById('btnRefresh').addEventListener('click', refreshData);
+    const backupBtn = document.getElementById('btnBackup');
+    if (backupBtn) {
+        backupBtn.addEventListener('click', exportBackup);
+    }
     
-    // Enter key
-    document.getElementById('personNameInput').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && !isSaving) savePerson();
-    });
-    document.getElementById('personAmountInput').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter' && !isSaving) savePerson();
-    });
-    document.getElementById('debtAmountInput').addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') addDebt();
-    });
+    const restoreBtn = document.getElementById('btnRestore');
+    if (restoreBtn) {
+        restoreBtn.addEventListener('click', importBackup);
+    }
     
-    // Close modals on outside click
+    const refreshBtn = document.getElementById('btnRefresh');
+    if (refreshBtn) {
+        refreshBtn.addEventListener('click', refreshData);
+    }
+    
+    // === Enter key ===
+    const personNameInput = document.getElementById('personNameInput');
+    if (personNameInput) {
+        personNameInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !isSaving) savePerson();
+        });
+    }
+    
+    const personAmountInput = document.getElementById('personAmountInput');
+    if (personAmountInput) {
+        personAmountInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !isSaving) savePerson();
+        });
+    }
+    
+    const debtAmountInput = document.getElementById('debtAmountInput');
+    if (debtAmountInput) {
+        debtAmountInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') addDebt();
+        });
+    }
+    
+    // === إغلاق المودال عند الضغط خارجها ===
     document.querySelectorAll('.modal').forEach(modal => {
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
@@ -784,8 +978,28 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
     
-    // تحميل البيانات
+    // === تحميل البيانات ===
     loadPersons();
+    
+    console.log('✅ التطبيق جاهز للاستخدام');
 });
 
-console.log('✅ App ready - All data stored in Firebase Cloud');
+// ===== تصدير الدوال للنافذة =====
+window.openPersonModal = openPersonModal;
+window.savePerson = savePerson;
+window.openClientDetails = openClientDetails;
+window.closeClientDetails = closeClientDetails;
+window.addDebt = addDebt;
+window.editDebt = editDebt;
+window.confirmDeleteDebt = confirmDeleteDebt;
+window.confirmDeletePerson = confirmDeletePerson;
+window.confirmDelete = confirmDelete;
+window.closeConfirmModal = closeConfirmModal;
+window.handleSearch = handleSearch;
+window.clearSearch = clearSearch;
+window.refreshData = refreshData;
+window.exportBackup = exportBackup;
+window.importBackup = importBackup;
+window.showToast = showToast;
+
+console.log('✅ جميع الدوال مصدرة للنافذة');
