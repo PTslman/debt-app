@@ -1,5 +1,6 @@
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
+import { getAnalytics } from "firebase/analytics";
 
 const firebaseConfig = {
     apiKey: "AIzaSyBSQD0eam2rAczlUqnV4zIUjYey1Yyic_I",
@@ -11,7 +12,10 @@ const firebaseConfig = {
     measurementId: "G-71BB42PCEF"
 };
 
+// تهيئة Firebase
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 
-console.log('🔥 Firebase initialized');
+// التحقق من الاتصال
+console.log('🔥 Firebase initialized successfully');
+console.log('📁 Project ID:', firebaseConfig.projectId);
