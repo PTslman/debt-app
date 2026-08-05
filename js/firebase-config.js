@@ -14,4 +14,4 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app);
 
-console.log('🔥 Firebase initialized');
+console.log('🔥 Firebase initialized - Cloud Storage Only');
