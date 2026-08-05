@@ -1,7 +1,7 @@
 import { db } from './firebase-config.js';
 import { 
     collection, addDoc, getDocs, deleteDoc, doc, 
-    updateDoc, query, where, onSnapshot, orderBy 
+    updateDoc, query, where, onSnapshot, orderBy, writeBatch 
 } from "firebase/firestore";
 
 console.log('🚀 App started');
@@ -136,7 +136,6 @@ async function savePerson() {
     
     try {
         if (editingPerson) {
-            // تعديل عميل موجود
             await updateDoc(doc(db, "persons", editingPerson.id), {
                 name: name,
                 amount: Number(amount),
@@ -145,7 +144,6 @@ async function savePerson() {
             });
             showToast('✅ تم تعديل العميل', 'success');
         } else {
-            // إضافة عميل جديد
             const q = query(collection(db, "persons"), where("name", "==", name));
             const snapshot = await getDocs(q);
             
@@ -204,7 +202,6 @@ function loadPersons() {
                 const debtCount = debtsSnapshot.size;
                 totalDebts += debtCount;
                 
-                // حساب إجمالي المبلغ من الديون
                 debtsSnapshot.docs.forEach(doc => {
                     totalAmount += Number(doc.data().amount || 0);
                 });
@@ -213,15 +210,15 @@ function loadPersons() {
             document.getElementById('totalDebts').textContent = totalDebts;
             document.getElementById('totalAmount').textContent = totalAmount.toLocaleString();
             
-            // عرض العملاء
             renderPersons(persons);
             
         } catch (error) {
             console.error('Error loading persons:', error);
+            showToast('❌ خطأ في تحميل البيانات', 'error');
         }
     }, (error) => {
         console.error('Snapshot error:', error);
-        showToast('❌ خطأ في تحميل البيانات', 'error');
+        showToast('❌ خطأ في الاتصال بقاعدة البيانات', 'error');
     });
 }
 
@@ -229,7 +226,6 @@ function renderPersons(persons) {
     const container = document.getElementById('chatList');
     const searchQuery = document.getElementById('searchInput').value.toLowerCase().trim();
     
-    // تصفية حسب البحث
     let filtered = persons;
     if (searchQuery) {
         filtered = persons.filter(p => p.name.toLowerCase().includes(searchQuery));
@@ -249,10 +245,10 @@ function renderPersons(persons) {
     let html = '';
     filtered.forEach(person => {
         const firstLetter = person.name.charAt(0).toUpperCase();
-        const debtCount = person._debtCount || 0;
         const amount = person.amount || 0;
         const date = person.date ? formatDate(person.date) : '';
         
+        // حساب عدد الديون لكل شخص (سيتم تحديثه لاحقاً)
         html += `
             <div class="chat-item" data-id="${person.id}">
                 <div class="chat-avatar">${firstLetter}</div>
@@ -260,13 +256,10 @@ function renderPersons(persons) {
                     <div class="chat-name">${person.name}</div>
                     <div class="chat-preview">
                         <span class="amount">${Number(amount).toLocaleString()} ل.س</span>
-                        <span>•</span>
-                        <span>${debtCount} دين</span>
                     </div>
                 </div>
                 <div class="chat-meta">
                     <span class="chat-date">${date}</span>
-                    ${debtCount > 0 ? `<span class="chat-badge">${debtCount}</span>` : ''}
                 </div>
             </div>
         `;
@@ -290,7 +283,6 @@ function renderPersons(persons) {
 async function openClientDetails(person) {
     currentPersonId = person.id;
     
-    // تحديث معلومات العميل
     document.getElementById('clientName').textContent = person.name;
     document.getElementById('clientAvatar').textContent = person.name.charAt(0).toUpperCase();
     document.getElementById('clientTotalAmount').textContent = '0';
@@ -300,7 +292,6 @@ async function openClientDetails(person) {
     document.getElementById('clientName').dataset.personId = person.id;
     document.getElementById('clientName').dataset.personData = JSON.stringify(person);
     
-    // إعادة تعيين نموذج الدين
     document.getElementById('debtAmountInput').value = '';
     document.getElementById('debtDateInput').value = new Date().toISOString().split('T')[0];
     document.getElementById('debtMessage').className = 'message-box';
@@ -661,6 +652,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // إغلاق المودالات
     document.getElementById('closePersonModal').addEventListener('click', () => closeModal('personModal'));
     document.getElementById('closeClientModal').addEventListener('click', closeClientDetails);
+    document.getElementById('closeConfirmModalBtn').addEventListener('click', closeConfirmModal);
     document.getElementById('btnConfirmCancel').addEventListener('click', closeConfirmModal);
     document.getElementById('btnConfirmDelete').addEventListener('click', confirmDelete);
     
