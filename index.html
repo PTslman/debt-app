@@ -6,13 +6,21 @@
     <meta name="description" content="دفتر الديون - إدارة الديون بذكاء وأمان" />
     <meta name="theme-color" content="#25D366" />
     <title>📊 دفتر الديون</title>
+    
+    <!-- ===== CSS ===== -->
     <link rel="stylesheet" href="css/style.css" />
+    
+    <!-- ===== GOOGLE FONTS ===== -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    
+    <!-- ===== FONT AWESOME ===== -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
 </head>
 <body>
 
-    <!-- ===== HEADER ===== -->
+    <!-- ============================================================ -->
+    <!-- HEADER -->
+    <!-- ============================================================ -->
     <header class="app-header">
         <div class="header-content">
             <div class="header-left">
@@ -23,15 +31,19 @@
                 </div>
             </div>
             <div class="header-actions">
-                <button id="btnRefresh" class="header-btn" title="تحديث">
+                <!-- زر تحديث -->
+                <button id="btnRefresh" class="header-btn" title="تحديث البيانات">
                     <i class="fas fa-sync-alt"></i>
                 </button>
+                <!-- زر نسخ احتياطي -->
                 <button id="btnBackup" class="header-btn" title="نسخة احتياطية">
                     <i class="fas fa-cloud-download-alt"></i>
                 </button>
+                <!-- زر استعادة -->
                 <button id="btnRestore" class="header-btn" title="استعادة">
                     <i class="fas fa-cloud-upload-alt"></i>
                 </button>
+                <!-- زر تسجيل الخروج -->
                 <button id="btnLogout" class="header-btn" title="تسجيل الخروج" style="display:none;">
                     <i class="fas fa-sign-out-alt"></i>
                 </button>
@@ -39,7 +51,9 @@
         </div>
     </header>
 
-    <!-- ===== SEARCH BAR ===== -->
+    <!-- ============================================================ -->
+    <!-- SEARCH BAR -->
+    <!-- ============================================================ -->
     <div class="search-bar">
         <div class="search-container">
             <i class="fas fa-search search-icon"></i>
@@ -50,7 +64,9 @@
         </div>
     </div>
 
-    <!-- ===== STATISTICS ===== -->
+    <!-- ============================================================ -->
+    <!-- STATISTICS -->
+    <!-- ============================================================ -->
     <div class="stats-container">
         <div class="stat-item">
             <span class="stat-number" id="totalPersons">0</span>
@@ -68,13 +84,17 @@
         </div>
     </div>
 
-    <!-- ===== LOADING ===== -->
+    <!-- ============================================================ -->
+    <!-- LOADING INDICATOR -->
+    <!-- ============================================================ -->
     <div id="loadingIndicator" class="loading-indicator" style="display:none;">
         <i class="fas fa-spinner fa-spin"></i>
         <span>جاري التحميل...</span>
     </div>
 
-    <!-- ===== PERSONS LIST ===== -->
+    <!-- ============================================================ -->
+    <!-- PERSONS LIST -->
+    <!-- ============================================================ -->
     <div class="chat-list" id="chatList">
         <div class="empty-state">
             <i class="fas fa-users empty-icon"></i>
@@ -83,12 +103,16 @@
         </div>
     </div>
 
-    <!-- ===== FAB BUTTON ===== -->
-    <button id="fabAddPerson" class="fab-button">
+    <!-- ============================================================ -->
+    <!-- FAB BUTTON (إضافة عميل) -->
+    <!-- ============================================================ -->
+    <button id="fabAddPerson" class="fab-button" title="إضافة عميل جديد">
         <i class="fas fa-plus"></i>
     </button>
 
-    <!-- ===== MODAL: ADD/EDIT PERSON ===== -->
+    <!-- ============================================================ -->
+    <!-- MODAL: إضافة / تعديل عميل -->
+    <!-- ============================================================ -->
     <div id="personModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -98,6 +122,7 @@
                 </button>
             </div>
             <div class="modal-body">
+                <!-- اسم العميل -->
                 <div class="form-group">
                     <label>اسم العميل <span class="required">*</span></label>
                     <div class="input-with-icon">
@@ -105,6 +130,7 @@
                         <input type="text" id="personNameInput" placeholder="أدخل اسم العميل..." maxlength="100" />
                     </div>
                 </div>
+                <!-- المبلغ -->
                 <div class="form-group">
                     <label>المبلغ (ل.س) <span class="required">*</span></label>
                     <div class="input-with-icon">
@@ -112,6 +138,7 @@
                         <input type="number" id="personAmountInput" placeholder="0" min="0" step="1" />
                     </div>
                 </div>
+                <!-- التاريخ -->
                 <div class="form-group">
                     <label>التاريخ <span class="required">*</span></label>
                     <div class="input-with-icon">
@@ -119,15 +146,19 @@
                         <input type="date" id="personDateInput" />
                     </div>
                 </div>
+                <!-- زر الحفظ -->
                 <button id="btnSavePerson" class="btn-save">
                     <i class="fas fa-save"></i> حفظ
                 </button>
+                <!-- رسائل -->
                 <div id="personMessage" class="message-box"></div>
             </div>
         </div>
     </div>
 
-    <!-- ===== MODAL: CLIENT DETAILS ===== -->
+    <!-- ============================================================ -->
+    <!-- MODAL: تفاصيل العميل -->
+    <!-- ============================================================ -->
     <div id="clientModal" class="modal modal-full">
         <div class="modal-content modal-large">
             <div class="modal-header client-header">
@@ -139,10 +170,10 @@
                     </div>
                 </div>
                 <div class="client-header-actions">
-                    <button id="btnEditClient" class="header-btn-icon" title="تعديل">
+                    <button id="btnEditClient" class="header-btn-icon" title="تعديل العميل">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button id="btnDeleteClient" class="header-btn-icon" title="حذف">
+                    <button id="btnDeleteClient" class="header-btn-icon" title="حذف العميل">
                         <i class="fas fa-trash"></i>
                     </button>
                     <button class="modal-close" id="closeClientModal">
@@ -151,6 +182,7 @@
                 </div>
             </div>
             <div class="modal-body">
+                <!-- إجمالي العميل -->
                 <div class="client-total-card">
                     <div>
                         <span class="total-label">إجمالي الديون</span>
@@ -158,6 +190,8 @@
                         <span class="total-currency">ل.س</span>
                     </div>
                 </div>
+
+                <!-- إضافة دين -->
                 <div class="add-debt-card">
                     <div class="debt-form">
                         <div class="debt-input">
@@ -166,12 +200,14 @@
                         <div class="debt-input">
                             <input type="date" id="debtDateInput" />
                         </div>
-                        <button id="btnAddDebt" class="btn-add-debt">
+                        <button id="btnAddDebt" class="btn-add-debt" title="إضافة دين">
                             <i class="fas fa-plus"></i>
                         </button>
                     </div>
                     <div id="debtMessage" class="message-box"></div>
                 </div>
+
+                <!-- قائمة الديون -->
                 <div class="debts-list">
                     <h4><i class="fas fa-list"></i> سجل الديون</h4>
                     <div id="debtsContainer" class="debts-items"></div>
@@ -180,7 +216,9 @@
         </div>
     </div>
 
-    <!-- ===== MODAL: CONFIRM DELETE ===== -->
+    <!-- ============================================================ -->
+    <!-- MODAL: تأكيد الحذف -->
+    <!-- ============================================================ -->
     <div id="confirmModal" class="modal">
         <div class="modal-content modal-small">
             <div class="modal-header">
@@ -203,7 +241,9 @@
         </div>
     </div>
 
-    <!-- ===== TOAST CONTAINER ===== -->
+    <!-- ============================================================ -->
+    <!-- TOAST NOTIFICATIONS -->
+    <!-- ============================================================ -->
     <div id="toastContainer"></div>
 
     <!-- ============================================================ -->
@@ -220,7 +260,7 @@
     </script>
 
     <!-- ============================================================ -->
-    <!-- APPLICATION SCRIPTS -->
+    <!-- APPLICATION SCRIPTS (الترتيب مهم جداً) -->
     <!-- ============================================================ -->
     <script type="module" src="js/firebase-config.js"></script>
     <script type="module" src="js/backup.js"></script>
