@@ -12,9 +12,14 @@ const firebaseConfig = {
     measurementId: "G-71BB42PCEF"
 };
 
+// تهيئة Firebase
 const app = initializeApp(firebaseConfig);
+
+// تصدير الخدمات
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 
 console.log('🔥 Firebase initialized');
 console.log('📁 Project ID:', firebaseConfig.projectId);
+console.log('📦 Firestore ready');
+console.log('👤 Auth ready');
