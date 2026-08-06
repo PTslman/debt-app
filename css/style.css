@@ -25,6 +25,7 @@ body {
     color: var(--text-primary);
 }
 
+/* ===== SCROLLBAR ===== */
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-thumb { background: #CBD5E0; border-radius: 10px; }
 
@@ -556,4 +557,4 @@ body {
     .modal-body { padding: 16px; }
     .total-amount { font-size: 1.5rem; }
     .header-btn { width: 34px; height: 34px; font-size: 0.9rem; }
-   }
+        }
