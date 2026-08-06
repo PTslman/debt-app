@@ -1,19 +1,10 @@
-// ============================================================
-// BACKUP MODULE - COMPLETE
-// ============================================================
-
 import { db } from './firebase-config.js';
 import { collection, getDocs, addDoc, deleteDoc, doc, writeBatch } from "firebase/firestore";
 
 console.log('💾 Backup module loaded');
 
-// ============================================================
-// EXPORT BACKUP
-// ============================================================
-
 export async function exportBackup() {
     console.log('📤 Exporting backup...');
-
     try {
         const personsSnapshot = await getDocs(collection(db, "persons"));
         const debtsSnapshot = await getDocs(collection(db, "debts"));
@@ -41,33 +32,20 @@ export async function exportBackup() {
 
         if (window.showToast) {
             window.showToast('✅ تم تصدير النسخة الاحتياطية', 'success');
-        } else {
-            alert('✅ تم تصدير النسخة الاحتياطية');
         }
-
         console.log('✅ Export successful');
         return true;
-
     } catch (error) {
         console.error('❌ Export error:', error);
-
         if (window.showToast) {
             window.showToast('❌ خطأ في التصدير: ' + error.message, 'error');
-        } else {
-            alert('❌ خطأ في التصدير: ' + error.message);
         }
-
         return false;
     }
 }
 
-// ============================================================
-// IMPORT BACKUP
-// ============================================================
-
 export function importBackup() {
     console.log('📥 Importing backup...');
-
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json';
@@ -77,9 +55,7 @@ export function importBackup() {
         const file = e.target.files[0];
         if (!file) return;
 
-        if (!confirm('⚠️ استعادة النسخة ستستبدل جميع البيانات. هل أنت متأكد؟')) {
-            return;
-        }
+        if (!confirm('⚠️ استعادة النسخة ستستبدل جميع البيانات. هل أنت متأكد؟')) return;
 
         try {
             const text = await file.text();
@@ -90,7 +66,6 @@ export function importBackup() {
                 return;
             }
 
-            // Delete all existing data
             const personsSnapshot = await getDocs(collection(db, "persons"));
             const debtsSnapshot = await getDocs(collection(db, "debts"));
             const batch = writeBatch(db);
@@ -98,19 +73,15 @@ export function importBackup() {
             for (const docSnapshot of debtsSnapshot.docs) {
                 batch.delete(doc(db, "debts", docSnapshot.id));
             }
-
             for (const docSnapshot of personsSnapshot.docs) {
                 batch.delete(doc(db, "persons", docSnapshot.id));
             }
-
             await batch.commit();
 
-            // Add new data
             for (const person of data.persons) {
                 const { id, ...personData } = person;
                 await addDoc(collection(db, "persons"), personData);
             }
-
             for (const debt of data.debts) {
                 const { id, ...debtData } = debt;
                 await addDoc(collection(db, "debts"), debtData);
@@ -118,27 +89,22 @@ export function importBackup() {
 
             if (window.showToast) {
                 window.showToast('✅ تم استعادة البيانات', 'success');
-            } else {
-                alert('✅ تم استعادة البيانات');
             }
-
             setTimeout(() => location.reload(), 1500);
 
         } catch (error) {
             console.error('❌ Restore error:', error);
-
             if (window.showToast) {
                 window.showToast('❌ خطأ في الاستعادة: ' + error.message, 'error');
-            } else {
-                alert('❌ خطأ في الاستعادة: ' + error.message);
             }
         }
-
         input.remove();
     };
-
     document.body.appendChild(input);
     input.click();
 }
 
+// Export to window
+window.exportBackup = exportBackup;
+window.importBackup = importBackup;
 console.log('✅ Backup module ready');
