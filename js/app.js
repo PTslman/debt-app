@@ -5,14 +5,15 @@
 import { db, auth } from './firebase-config.js';
 import {
     collection, addDoc, getDocs, deleteDoc, doc,
-    updateDoc, query, where, onSnapshot, orderBy, writeBatch
+    updateDoc, query, where, onSnapshot, orderBy
 } from "firebase/firestore";
 import { onAuthStateChanged, signOut } from "firebase/auth";
+import { exportBackup, importBackup } from './backup.js';
 
 console.log('🚀 Application started');
 
 // ============================================================
-// GLOBAL STATE
+// STATE
 // ============================================================
 
 const state = {
@@ -27,8 +28,10 @@ const state = {
     unsubscribeDebts: null
 };
 
+window.isSaving = false;
+
 // ============================================================
-// TOAST NOTIFICATIONS
+// TOAST
 // ============================================================
 
 window.showToast = function(message, type = 'success') {
@@ -175,6 +178,7 @@ window.savePerson = async function() {
     }
 
     state.isSaving = true;
+    window.isSaving = true;
     saveBtn.disabled = true;
     saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...';
 
@@ -203,6 +207,7 @@ window.savePerson = async function() {
                 nameInput.value = '';
                 nameInput.focus();
                 state.isSaving = false;
+                window.isSaving = false;
                 saveBtn.disabled = false;
                 saveBtn.innerHTML = '<i class="fas fa-save"></i> حفظ';
                 return;
@@ -229,6 +234,7 @@ window.savePerson = async function() {
         window.showToast('❌ خطأ في الحفظ: ' + error.message, 'error');
     } finally {
         state.isSaving = false;
+        window.isSaving = false;
         saveBtn.disabled = false;
         saveBtn.innerHTML = '<i class="fas fa-save"></i> حفظ';
     }
@@ -258,7 +264,6 @@ function loadPersons() {
 
         state.allPersons = persons;
 
-        // Update statistics
         document.getElementById('totalPersons').textContent = persons.length;
 
         let totalDebts = 0;
@@ -341,10 +346,10 @@ function renderPersons(persons) {
     container.innerHTML = html;
 
     container.querySelectorAll('.chat-item').forEach(item => {
-        item.addEventListener('click', function() {
+        item.onclick = function() {
             const person = state.allPersons.find(p => p.id === this.dataset.id);
             if (person) window.openClientDetails(person);
-        });
+        };
     });
 }
 
@@ -449,24 +454,19 @@ function loadDebts(personId) {
         container.innerHTML = html;
         document.getElementById('clientTotalAmount').textContent = total.toLocaleString();
 
-        // Event listeners for edit/delete
         container.querySelectorAll('.btn-edit-debt').forEach(btn => {
-            btn.addEventListener('click', function(e) {
+            btn.onclick = function(e) {
                 e.stopPropagation();
                 window.editDebt(this.dataset.id, this.dataset.amount, this.dataset.date);
-            });
+            };
         });
 
         container.querySelectorAll('.btn-delete-debt').forEach(btn => {
-            btn.addEventListener('click', function(e) {
+            btn.onclick = function(e) {
                 e.stopPropagation();
                 window.confirmDeleteDebt(this.dataset.id);
-            });
+            };
         });
-
-    }, (error) => {
-        console.error('❌ Load debts error:', error);
-        window.showToast('❌ خطأ في تحميل الديون: ' + error.message, 'error');
     });
 }
 
@@ -666,27 +666,11 @@ window.refreshData = function() {
 };
 
 // ============================================================
-// BACKUP FUNCTIONS (from backup.js)
+// EXPOSE FUNCTIONS
 // ============================================================
 
-// These will be imported from backup.js
-window.exportBackup = function() {
-    import('./backup.js').then(module => {
-        module.exportBackup();
-    }).catch(error => {
-        console.error('❌ Failed to load backup module:', error);
-        window.showToast('❌ خطأ في تحميل وحدة النسخ الاحتياطي', 'error');
-    });
-};
-
-window.importBackup = function() {
-    import('./backup.js').then(module => {
-        module.importBackup();
-    }).catch(error => {
-        console.error('❌ Failed to load backup module:', error);
-        window.showToast('❌ خطأ في تحميل وحدة النسخ الاحتياطي', 'error');
-    });
-};
+window.exportBackup = exportBackup;
+window.importBackup = importBackup;
 
 // ============================================================
 // AUTH STATE
@@ -733,71 +717,96 @@ document.getElementById('btnLogout')?.addEventListener('click', function() {
 });
 
 // ============================================================
-// INITIALIZATION
+// INIT - ربط جميع الأزرار يدوياً
 // ============================================================
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('✅ DOM ready - Initializing application');
+    console.log('✅ DOM ready - ربط الأزرار يدوياً');
 
-    // FAB Button
-    document.getElementById('fabAddPerson')?.addEventListener('click', function() {
+    // 1. زر الإضافة
+    document.getElementById('fabAddPerson').onclick = function() {
         window.openPersonModal(null);
-    });
+    };
 
-    // Save Person
-    document.getElementById('btnSavePerson')?.addEventListener('click', window.savePerson);
+    // 2. زر الحفظ
+    document.getElementById('btnSavePerson').onclick = function() {
+        window.savePerson();
+    };
 
-    // Add Debt
-    document.getElementById('btnAddDebt')?.addEventListener('click', window.addDebt);
+    // 3. زر إضافة الدين
+    document.getElementById('btnAddDebt').onclick = function() {
+        window.addDebt();
+    };
 
-    // Close Modals    document.getElementById('closePersonModal')?.addEventListener('click', function() {
-        if (!state.isSaving) closeModal('personModal');
-    });
+    // 4. زر النسخ الاحتياطي
+    document.getElementById('btnBackup').onclick = function() {
+        window.exportBackup();
+    };
 
-    document.getElementById('closeClientModal')?.addEventListener('click', window.closeClientDetails);
+    // 5. زر الاستعادة
+    document.getElementById('btnRestore').onclick = function() {
+        window.importBackup();
+    };
 
-    document.getElementById('closeConfirmModalBtn')?.addEventListener('click', window.closeConfirmModal);
+    // 6. زر التحديث
+    document.getElementById('btnRefresh').onclick = function() {
+        window.refreshData();
+    };
 
-    document.getElementById('btnConfirmCancel')?.addEventListener('click', window.closeConfirmModal);
-
-    document.getElementById('btnConfirmDelete')?.addEventListener('click', window.confirmDelete);
-
-    // Edit/Delete Client
-    document.getElementById('btnEditClient')?.addEventListener('click', function() {
+    // 7. زر تعديل العميل
+    document.getElementById('btnEditClient').onclick = function() {
         const data = JSON.parse(document.getElementById('clientName').dataset.personData || '{}');
         if (data.id) {
             window.closeClientDetails();
             setTimeout(() => window.openPersonModal(data), 400);
         }
-    });
+    };
 
-    document.getElementById('btnDeleteClient')?.addEventListener('click', window.confirmDeletePerson);
+    // 8. زر حذف العميل
+    document.getElementById('btnDeleteClient').onclick = function() {
+        window.confirmDeletePerson();
+    };
 
-    // Search
-    document.getElementById('searchInput')?.addEventListener('input', window.handleSearch);
-    document.getElementById('btnClearSearch')?.addEventListener('click', window.clearSearch);
+    // 9. زر تأكيد الحذف
+    document.getElementById('btnConfirmDelete').onclick = function() {
+        window.confirmDelete();
+    };
 
-    // Backup/Refresh
-    document.getElementById('btnBackup')?.addEventListener('click', window.exportBackup);
-    document.getElementById('btnRestore')?.addEventListener('click', window.importBackup);
-    document.getElementById('btnRefresh')?.addEventListener('click', window.refreshData);
+    // 10. زر إلغاء الحذف
+    document.getElementById('btnConfirmCancel').onclick = function() {
+        window.closeConfirmModal();
+    };
 
-    // Enter Key
-    document.getElementById('personNameInput')?.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter' && !state.isSaving) window.savePerson();
-    });
+    // 11. إغلاق مودال العميل
+    document.getElementById('closeClientModal').onclick = function() {
+        window.closeClientDetails();
+    };
 
-    document.getElementById('personAmountInput')?.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter' && !state.isSaving) window.savePerson();
-    });
+    // 12. إغلاق مودال الإضافة
+    document.getElementById('closePersonModal').onclick = function() {
+        if (!state.isSaving) {
+            closeModal('personModal');
+        }
+    };
 
-    document.getElementById('debtAmountInput')?.addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') window.addDebt();
-    });
+    // 13. إغلاق مودال التأكيد
+    document.getElementById('closeConfirmModalBtn').onclick = function() {
+        window.closeConfirmModal();
+    };
 
-    // Close modal on outside click
+    // 14. بحث
+    document.getElementById('searchInput').oninput = function(e) {
+        window.handleSearch(e);
+    };
+
+    // 15. مسح البحث
+    document.getElementById('btnClearSearch').onclick = function() {
+        window.clearSearch();
+    };
+
+    // 16. إغلاق المودال عند الضغط خارجها
     document.querySelectorAll('.modal').forEach(modal => {
-        modal.addEventListener('click', function(e) {
+        modal.onclick = function(e) {
             if (e.target === this) {
                 if (this.id === 'personModal' && !state.isSaving) {
                     closeModal('personModal');
@@ -807,10 +816,19 @@ document.addEventListener('DOMContentLoaded', function() {
                     window.closeConfirmModal();
                 }
             }
-        });
+        };
     });
 
-    console.log('✅ All event listeners registered');
-});
+    // 17. Enter key
+    document.getElementById('personNameInput').onkeypress = function(e) {
+        if (e.key === 'Enter' && !state.isSaving) window.savePerson();
+    };
+    document.getElementById('personAmountInput').onkeypress = function(e) {
+        if (e.key === 'Enter' && !state.isSaving) window.savePerson();
+    };
+    document.getElementById('debtAmountInput').onkeypress = function(e) {
+        if (e.key === 'Enter') window.addDebt();
+    };
 
-console.log('✅ App ready');
+    console.log('✅ جميع الأزرار مرتبطة بنجاح!');
+});
