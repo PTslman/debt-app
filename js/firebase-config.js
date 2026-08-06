@@ -1,7 +1,3 @@
-// ============================================================
-// FIREBASE CONFIGURATION
-// ============================================================
-
 import { initializeApp } from "firebase/app";
 import { getFirestore } from "firebase/firestore";
 import { getAuth } from "firebase/auth";
@@ -16,14 +12,8 @@ const firebaseConfig = {
     measurementId: "G-71BB42PCEF"
 };
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
-
-// Export services
 export const db = getFirestore(app);
 export const auth = getAuth(app);
 
 console.log('🔥 Firebase initialized');
-console.log('📁 Project ID:', firebaseConfig.projectId);
-console.log('👤 Auth service ready');
-console.log('📦 Firestore service ready');
