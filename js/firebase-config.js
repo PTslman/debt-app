@@ -17,3 +17,4 @@ export const db = getFirestore(app);
 export const auth = getAuth(app);
 
 console.log('🔥 Firebase initialized');
+console.log('📁 Project ID:', firebaseConfig.projectId);
