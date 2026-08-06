@@ -1,5 +1,5 @@
 // ============================================================
-// MAIN APPLICATION - WITHOUT REQUIRED AUTH
+// MAIN APPLICATION - WITH FULL DEBUGGING
 // ============================================================
 
 import { db } from './firebase-config.js';
@@ -9,7 +9,7 @@ import {
 } from "firebase/firestore";
 import { exportBackup, importBackup } from './backup.js';
 
-console.log('🚀 Application started - No Auth Required');
+console.log('🚀 Application started');
 
 // ============================================================
 // STATE
@@ -35,7 +35,11 @@ window.isSaving = false;
 
 window.showToast = function(message, type = 'success') {
     const container = document.getElementById('toastContainer');
-    if (!container) return;
+    if (!container) {
+        console.warn('⚠️ Toast container not found');
+        alert(message);
+        return;
+    }
 
     const colors = {
         success: '#25D366',
@@ -81,6 +85,8 @@ function openModal(id) {
         modal.classList.add('active');
         document.body.style.overflow = 'hidden';
         console.log(`📂 Modal opened: ${id}`);
+    } else {
+        console.error(`❌ Modal not found: ${id}`);
     }
 }
 
@@ -91,6 +97,25 @@ function closeModal(id) {
         modal.classList.remove('active');
         document.body.style.overflow = 'auto';
         console.log(`📂 Modal closed: ${id}`);
+    }
+}
+
+// ============================================================
+// TEST FIREBASE CONNECTION
+// ============================================================
+
+async function testFirebase() {
+    try {
+        console.log('🔍 Testing Firebase connection...');
+        const testRef = collection(db, "persons");
+        const snapshot = await getDocs(testRef);
+        console.log('✅ Firebase connected! Documents:', snapshot.size);
+        return true;
+    } catch (error) {
+        console.error('❌ Firebase connection failed:', error);
+        console.error('❌ Error details:', error.message);
+        window.showToast('❌ فشل الاتصال بقاعدة البيانات: ' + error.message, 'error');
+        return false;
     }
 }
 
@@ -111,6 +136,12 @@ window.openPersonModal = function(person = null) {
     const amountInput = document.getElementById('personAmountInput');
     const dateInput = document.getElementById('personDateInput');
     const messageBox = document.getElementById('personMessage');
+
+    if (!modalTitle || !nameInput || !amountInput || !dateInput) {
+        console.error('❌ Form elements not found');
+        window.showToast('❌ خطأ في النموذج', 'error');
+        return;
+    }
 
     messageBox.className = 'message-box';
     messageBox.style.display = 'none';
@@ -134,27 +165,40 @@ window.openPersonModal = function(person = null) {
 
 window.savePerson = async function() {
     console.log('💾 Saving person...');
+    
+    // التحقق من حالة الحفظ
     if (state.isSaving) {
+        console.log('⏳ Already saving, please wait');
         window.showToast('⏳ جاري الحفظ...', 'warning');
         return;
     }
 
+    // الحصول على العناصر
     const nameInput = document.getElementById('personNameInput');
     const amountInput = document.getElementById('personAmountInput');
     const dateInput = document.getElementById('personDateInput');
     const messageBox = document.getElementById('personMessage');
     const saveBtn = document.getElementById('btnSavePerson');
 
+    if (!nameInput || !amountInput || !dateInput || !messageBox || !saveBtn) {
+        console.error('❌ Form elements not found');
+        window.showToast('❌ خطأ في النموذج', 'error');
+        return;
+    }
+
     const name = nameInput.value.trim();
     const amount = amountInput.value.trim();
     const date = dateInput.value;
+
+    console.log('📝 Data to save:', { name, amount, date });
 
     messageBox.className = 'message-box';
     messageBox.style.display = 'none';
     messageBox.textContent = '';
 
-    // Validation
+    // ===== VALIDATION =====
     if (!name) {
+        console.warn('⚠️ Name is empty');
         messageBox.textContent = '⚠️ الرجاء إدخال اسم العميل';
         messageBox.className = 'message-box error show';
         messageBox.style.display = 'block';
@@ -163,6 +207,7 @@ window.savePerson = async function() {
     }
 
     if (!amount || isNaN(amount) || Number(amount) < 0) {
+        console.warn('⚠️ Invalid amount:', amount);
         messageBox.textContent = '⚠️ الرجاء إدخال مبلغ صحيح';
         messageBox.className = 'message-box error show';
         messageBox.style.display = 'block';
@@ -171,6 +216,7 @@ window.savePerson = async function() {
     }
 
     if (!date) {
+        console.warn('⚠️ Date is empty');
         messageBox.textContent = '⚠️ الرجاء اختيار التاريخ';
         messageBox.className = 'message-box error show';
         messageBox.style.display = 'block';
@@ -178,32 +224,41 @@ window.savePerson = async function() {
         return;
     }
 
+    // ===== START SAVING =====
     state.isSaving = true;
     window.isSaving = true;
     saveBtn.disabled = true;
     saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> جاري الحفظ...';
+    console.log('⏳ Saving started...');
 
     try {
         const personData = {
             name: name,
             amount: Number(amount),
             date: date,
-            userId: 'anonymous'
+            userId: 'anonymous',
+            createdAt: new Date().toISOString()
         };
 
+        console.log('📤 Sending to Firebase:', personData);
+
         if (state.editingPerson) {
+            // ===== UPDATE =====
+            console.log('✏️ Updating person:', state.editingPerson.id);
             await updateDoc(doc(db, "persons", state.editingPerson.id), {
                 ...personData,
                 updatedAt: new Date().toISOString()
             });
+            console.log('✅ Person updated successfully');
             window.showToast('✅ تم تعديل العميل', 'success');
-            console.log('✅ Person updated:', state.editingPerson.id);
         } else {
-            // Check for duplicate name
+            // ===== CHECK DUPLICATE =====
+            console.log('🔍 Checking for duplicate name...');
             const q = query(collection(db, "persons"), where("name", "==", name));
             const snapshot = await getDocs(q);
 
             if (!snapshot.empty) {
+                console.warn('⚠️ Duplicate name found:', name);
                 messageBox.textContent = `⚠️ "${name}" موجود مسبقاً!`;
                 messageBox.className = 'message-box error show';
                 messageBox.style.display = 'block';
@@ -216,24 +271,29 @@ window.savePerson = async function() {
                 return;
             }
 
-            const docRef = await addDoc(collection(db, "persons"), {
-                ...personData,
-                createdAt: new Date().toISOString()
-            });
-            window.showToast(`✅ تم إضافة "${name}"`, 'success');
+            // ===== ADD =====
+            console.log('➕ Adding new person...');
+            const docRef = await addDoc(collection(db, "persons"), personData);
             console.log('✅ Person added with ID:', docRef.id);
+            window.showToast(`✅ تم إضافة "${name}"`, 'success');
         }
 
-        // Close modal immediately
+        // ===== CLOSE MODAL =====
+        console.log('🔒 Closing modal');
         closeModal('personModal');
         state.editingPerson = null;
         nameInput.value = '';
         amountInput.value = '';
         dateInput.value = new Date().toISOString().split('T')[0];
 
+        console.log('✅ Save completed successfully');
+
     } catch (error) {
-        console.error('❌ Save error:', error);
-        console.error('❌ Error details:', error.message);
+        console.error('❌❌❌ SAVE ERROR ❌❌❌');
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        console.error('Error code:', error.code);
+        
         messageBox.textContent = `❌ ${error.message}`;
         messageBox.className = 'message-box error show';
         messageBox.style.display = 'block';
@@ -243,6 +303,7 @@ window.savePerson = async function() {
         window.isSaving = false;
         saveBtn.disabled = false;
         saveBtn.innerHTML = '<i class="fas fa-save"></i> حفظ';
+        console.log('🏁 Save process finished');
     }
 };
 
@@ -263,37 +324,42 @@ function loadPersons() {
     const q = query(collection(db, "persons"), orderBy("createdAt", "desc"));
 
     state.unsubscribePersons = onSnapshot(q, async (snapshot) => {
-        console.log('📦 Persons loaded:', snapshot.size);
-        const persons = snapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-        }));
+        try {
+            console.log('📦 Persons loaded:', snapshot.size);
+            const persons = snapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data()
+            }));
 
-        state.allPersons = persons;
+            state.allPersons = persons;
 
-        document.getElementById('totalPersons').textContent = persons.length;
+            document.getElementById('totalPersons').textContent = persons.length;
 
-        let totalDebts = 0;
-        let totalAmount = 0;
+            let totalDebts = 0;
+            let totalAmount = 0;
 
-        for (const person of persons) {
-            const debtsQuery = query(collection(db, "debts"), where("personId", "==", person.id));
-            const debtsSnapshot = await getDocs(debtsQuery);
-            totalDebts += debtsSnapshot.size;
-            debtsSnapshot.docs.forEach(d => {
-                totalAmount += Number(d.data().amount || 0);
-            });
+            for (const person of persons) {
+                const debtsQuery = query(collection(db, "debts"), where("personId", "==", person.id));
+                const debtsSnapshot = await getDocs(debtsQuery);
+                totalDebts += debtsSnapshot.size;
+                debtsSnapshot.docs.forEach(d => {
+                    totalAmount += Number(d.data().amount || 0);
+                });
+            }
+
+            document.getElementById('totalDebts').textContent = totalDebts;
+            document.getElementById('totalAmount').textContent = totalAmount.toLocaleString();
+
+            renderPersons(persons);
+
+            if (loading) loading.style.display = 'none';
+        } catch (error) {
+            console.error('❌ Error processing persons:', error);
+            if (loading) loading.style.display = 'none';
         }
 
-        document.getElementById('totalDebts').textContent = totalDebts;
-        document.getElementById('totalAmount').textContent = totalAmount.toLocaleString();
-
-        renderPersons(persons);
-
-        if (loading) loading.style.display = 'none';
-
     }, (error) => {
-        console.error('❌ Load error:', error);
+        console.error('❌ Snapshot error:', error);
         if (loading) loading.style.display = 'none';
         window.showToast('❌ خطأ في تحميل البيانات: ' + error.message, 'error');
     });
@@ -305,7 +371,13 @@ function loadPersons() {
 
 function renderPersons(persons) {
     const container = document.getElementById('chatList');
-    const searchQuery = document.getElementById('searchInput').value.toLowerCase().trim();
+    if (!container) {
+        console.error('❌ chatList container not found');
+        return;
+    }
+
+    const searchInput = document.getElementById('searchInput');
+    const searchQuery = searchInput ? searchInput.value.toLowerCase().trim() : '';
 
     let filtered = searchQuery ?
         persons.filter(p => p.name?.toLowerCase().includes(searchQuery)) :
@@ -366,20 +438,37 @@ function renderPersons(persons) {
 
 window.openClientDetails = function(person) {
     console.log('👤 Opening client details:', person?.name);
-    if (!person?.id) return;
+    if (!person?.id) {
+        window.showToast('⚠️ بيانات العميل غير صالحة', 'error');
+        return;
+    }
 
     state.currentPersonId = person.id;
 
-    document.getElementById('clientName').textContent = person.name || 'بدون اسم';
-    document.getElementById('clientAvatar').textContent = person.name?.charAt(0).toUpperCase() || '?';
-    document.getElementById('clientTotalAmount').textContent = '0';
-    document.getElementById('clientDebtCount').textContent = '0 ديون';
-    document.getElementById('clientName').dataset.personData = JSON.stringify(person);
+    const clientName = document.getElementById('clientName');
+    const clientAvatar = document.getElementById('clientAvatar');
+    const clientTotalAmount = document.getElementById('clientTotalAmount');
+    const clientDebtCount = document.getElementById('clientDebtCount');
 
-    document.getElementById('debtAmountInput').value = '';
-    document.getElementById('debtDateInput').value = new Date().toISOString().split('T')[0];
-    document.getElementById('debtMessage').className = 'message-box';
-    document.getElementById('debtMessage').style.display = 'none';
+    if (clientName) {
+        clientName.textContent = person.name || 'بدون اسم';
+        clientName.dataset.personData = JSON.stringify(person);
+    }
+    if (clientAvatar) clientAvatar.textContent = person.name?.charAt(0).toUpperCase() || '?';
+    if (clientTotalAmount) clientTotalAmount.textContent = '0';
+    if (clientDebtCount) clientDebtCount.textContent = '0 ديون';
+
+    const debtAmountInput = document.getElementById('debtAmountInput');
+    const debtDateInput = document.getElementById('debtDateInput');
+    const debtMessage = document.getElementById('debtMessage');
+
+    if (debtAmountInput) debtAmountInput.value = '';
+    if (debtDateInput) debtDateInput.value = new Date().toISOString().split('T')[0];
+    if (debtMessage) {
+        debtMessage.className = 'message-box';
+        debtMessage.style.display = 'none';
+        debtMessage.textContent = '';
+    }
 
     state.currentDebtId = null;
 
@@ -425,6 +514,8 @@ function loadDebts(personId) {
         let total = 0;
 
         document.getElementById('clientDebtCount').textContent = `${debts.length} ديون`;
+
+        if (!container) return;
 
         if (debts.length === 0) {
             container.innerHTML = `
@@ -683,13 +774,20 @@ window.importBackup = importBackup;
 // INIT - ربط جميع الأزرار يدوياً
 // ============================================================
 
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', async function() {
     console.log('✅ DOM ready - ربط الأزرار يدوياً');
+
+    // اختبار الاتصال بقاعدة البيانات
+    const connected = await testFirebase();
+    if (!connected) {
+        window.showToast('⚠️ تأكد من اتصال الإنترنت وقواعد Firebase', 'warning');
+    }
 
     // 1. زر الإضافة
     const fabBtn = document.getElementById('fabAddPerson');
     if (fabBtn) {
         fabBtn.onclick = function() {
+            console.log('🟢 زر الإضافة ضغط');
             window.openPersonModal(null);
         };
         console.log('✅ زر الإضافة مرتبط');
@@ -699,15 +797,19 @@ document.addEventListener('DOMContentLoaded', function() {
     const saveBtn = document.getElementById('btnSavePerson');
     if (saveBtn) {
         saveBtn.onclick = function() {
+            console.log('🟢 زر الحفظ ضغط');
             window.savePerson();
         };
         console.log('✅ زر الحفظ مرتبط');
+    } else {
+        console.error('❌ زر الحفظ غير موجود');
     }
 
     // 3. زر إضافة الدين
     const addDebtBtn = document.getElementById('btnAddDebt');
     if (addDebtBtn) {
         addDebtBtn.onclick = function() {
+            console.log('🟢 زر إضافة الدين ضغط');
             window.addDebt();
         };
         console.log('✅ زر إضافة الدين مرتبط');
@@ -717,6 +819,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const backupBtn = document.getElementById('btnBackup');
     if (backupBtn) {
         backupBtn.onclick = function() {
+            console.log('🟢 زر النسخ الاحتياطي ضغط');
             window.exportBackup();
         };
         console.log('✅ زر النسخ الاحتياطي مرتبط');
@@ -726,6 +829,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const restoreBtn = document.getElementById('btnRestore');
     if (restoreBtn) {
         restoreBtn.onclick = function() {
+            console.log('🟢 زر الاستعادة ضغط');
             window.importBackup();
         };
         console.log('✅ زر الاستعادة مرتبط');
@@ -735,6 +839,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const refreshBtn = document.getElementById('btnRefresh');
     if (refreshBtn) {
         refreshBtn.onclick = function() {
+            console.log('🟢 زر التحديث ضغط');
             window.refreshData();
         };
         console.log('✅ زر التحديث مرتبط');
@@ -744,6 +849,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const editClientBtn = document.getElementById('btnEditClient');
     if (editClientBtn) {
         editClientBtn.onclick = function() {
+            console.log('🟢 زر تعديل العميل ضغط');
             const data = JSON.parse(document.getElementById('clientName').dataset.personData || '{}');
             if (data.id) {
                 window.closeClientDetails();
@@ -757,6 +863,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const deleteClientBtn = document.getElementById('btnDeleteClient');
     if (deleteClientBtn) {
         deleteClientBtn.onclick = function() {
+            console.log('🟢 زر حذف العميل ضغط');
             window.confirmDeletePerson();
         };
         console.log('✅ زر حذف العميل مرتبط');
@@ -766,6 +873,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const confirmDeleteBtn = document.getElementById('btnConfirmDelete');
     if (confirmDeleteBtn) {
         confirmDeleteBtn.onclick = function() {
+            console.log('🟢 زر تأكيد الحذف ضغط');
             window.confirmDelete();
         };
         console.log('✅ زر تأكيد الحذف مرتبط');
@@ -775,6 +883,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const confirmCancelBtn = document.getElementById('btnConfirmCancel');
     if (confirmCancelBtn) {
         confirmCancelBtn.onclick = function() {
+            console.log('🟢 زر إلغاء الحذف ضغط');
             window.closeConfirmModal();
         };
         console.log('✅ زر إلغاء الحذف مرتبط');
@@ -784,6 +893,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const closeClientBtn = document.getElementById('closeClientModal');
     if (closeClientBtn) {
         closeClientBtn.onclick = function() {
+            console.log('🟢 زر إغلاق مودال العميل ضغط');
             window.closeClientDetails();
         };
         console.log('✅ زر إغلاق مودال العميل مرتبط');
@@ -793,6 +903,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const closePersonBtn = document.getElementById('closePersonModal');
     if (closePersonBtn) {
         closePersonBtn.onclick = function() {
+            console.log('🟢 زر إغلاق مودال الإضافة ضغط');
             if (!state.isSaving) {
                 closeModal('personModal');
             }
@@ -804,6 +915,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const closeConfirmBtn = document.getElementById('closeConfirmModalBtn');
     if (closeConfirmBtn) {
         closeConfirmBtn.onclick = function() {
+            console.log('🟢 زر إغلاق مودال التأكيد ضغط');
             window.closeConfirmModal();
         };
         console.log('✅ زر إغلاق مودال التأكيد مرتبط');
@@ -822,6 +934,7 @@ document.addEventListener('DOMContentLoaded', function() {
     const clearSearchBtn = document.getElementById('btnClearSearch');
     if (clearSearchBtn) {
         clearSearchBtn.onclick = function() {
+            console.log('🟢 زر مسح البحث ضغط');
             window.clearSearch();
         };
         console.log('✅ زر مسح البحث مرتبط');
@@ -846,21 +959,30 @@ document.addEventListener('DOMContentLoaded', function() {
     const personNameInput = document.getElementById('personNameInput');
     if (personNameInput) {
         personNameInput.onkeypress = function(e) {
-            if (e.key === 'Enter' && !state.isSaving) window.savePerson();
+            if (e.key === 'Enter' && !state.isSaving) {
+                console.log('🟢 Enter pressed - saving');
+                window.savePerson();
+            }
         };
     }
 
     const personAmountInput = document.getElementById('personAmountInput');
     if (personAmountInput) {
         personAmountInput.onkeypress = function(e) {
-            if (e.key === 'Enter' && !state.isSaving) window.savePerson();
+            if (e.key === 'Enter' && !state.isSaving) {
+                console.log('🟢 Enter pressed - saving');
+                window.savePerson();
+            }
         };
     }
 
     const debtAmountInput = document.getElementById('debtAmountInput');
     if (debtAmountInput) {
         debtAmountInput.onkeypress = function(e) {
-            if (e.key === 'Enter') window.addDebt();
+            if (e.key === 'Enter') {
+                console.log('🟢 Enter pressed - adding debt');
+                window.addDebt();
+            }
         };
     }
 
@@ -868,5 +990,6 @@ document.addEventListener('DOMContentLoaded', function() {
     loadPersons();
 
     console.log('✅ جميع الأزرار مرتبطة بنجاح!');
-    console.log('🎯 التطبيق جاهز للاستخدام - بدون مصادقة');
+    console.log('🎯 التطبيق جاهز للاستخدام');
+    console.log('📝 جرب إضافة عميل الآن');
 });
