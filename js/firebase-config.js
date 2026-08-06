@@ -1,5 +1,17 @@
+// ============================================================
+// FIREBASE CONFIGURATION - CORRECT SETTINGS
+// ============================================================
+
 import { initializeApp } from "firebase/app";
-import { getFirestore } from "firebase/firestore";
+import { 
+    getFirestore, 
+    enableIndexedDbPersistence,
+    enableMultiTabIndexedDbPersistence,
+    initializeFirestore,
+    memoryLocalCache,
+    persistentLocalCache,
+    persistentMultipleTabManager
+} from "firebase/firestore";
 import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
@@ -15,11 +27,30 @@ const firebaseConfig = {
 // تهيئة Firebase
 const app = initializeApp(firebaseConfig);
 
+// تهيئة Firestore مع إعدادات المزامنة الصحيحة
+const db = initializeFirestore(app, {
+    localCache: persistentLocalCache({
+        tabManager: persistentMultipleTabManager()
+    }),
+    experimentalForceLongPolling: true,
+    useFetchStreams: true,
+    ignoreUndefinedProperties: true
+});
+
+// تمكين التخزين المحلي للمزامنة دون اتصال
+enableIndexedDbPersistence(db, {
+    synchronizeTabs: true
+}).then(() => {
+    console.log('✅ IndexedDB persistence enabled');
+}).catch((err) => {
+    console.warn('⚠️ Persistence error:', err);
+});
+
 // تصدير الخدمات
-export const db = getFirestore(app);
+export { db };
 export const auth = getAuth(app);
 
-console.log('🔥 Firebase initialized');
+console.log('🔥 Firebase initialized successfully');
 console.log('📁 Project ID:', firebaseConfig.projectId);
-console.log('📦 Firestore ready');
-console.log('👤 Auth ready');
+console.log('📦 Firestore with persistence ready');
+console.log('🔄 Sync enabled');
