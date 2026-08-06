@@ -10,26 +10,25 @@
 </head>
 <body>
 
-    <!-- ===== HEADER ===== -->
+    <!-- HEADER -->
     <header class="app-header">
         <div class="header-content">
             <div class="header-left">
                 <i class="fas fa-book-open header-icon"></i>
                 <div>
                     <h1>دفتر الديون</h1>
-                    <span class="header-subtitle" id="headerSubtitle">💾 سحابي بالكامل</span>
+                    <span class="header-subtitle">💾 سحابي بالكامل</span>
                 </div>
             </div>
             <div class="header-actions">
                 <button id="btnRefresh" class="header-btn" title="تحديث"><i class="fas fa-sync-alt"></i></button>
                 <button id="btnBackup" class="header-btn" title="نسخة احتياطية"><i class="fas fa-cloud-download-alt"></i></button>
                 <button id="btnRestore" class="header-btn" title="استعادة"><i class="fas fa-cloud-upload-alt"></i></button>
-                <button id="btnLogout" class="header-btn" title="تسجيل الخروج" style="display:none;"><i class="fas fa-sign-out-alt"></i></button>
             </div>
         </div>
     </header>
 
-    <!-- ===== SEARCH ===== -->
+    <!-- SEARCH -->
     <div class="search-bar">
         <div class="search-container">
             <i class="fas fa-search search-icon"></i>
@@ -38,7 +37,7 @@
         </div>
     </div>
 
-    <!-- ===== STATS ===== -->
+    <!-- STATS -->
     <div class="stats-container">
         <div class="stat-item"><span class="stat-number" id="totalPersons">0</span><span class="stat-label">👥 عملاء</span></div>
         <div class="stat-divider"></div>
@@ -47,12 +46,12 @@
         <div class="stat-item"><span class="stat-number" id="totalAmount">0</span><span class="stat-label">💰 ل.س</span></div>
     </div>
 
-    <!-- ===== LOADING ===== -->
+    <!-- LOADING -->
     <div id="loadingIndicator" class="loading-indicator" style="display:none;">
         <i class="fas fa-spinner fa-spin"></i><span>جاري التحميل...</span>
     </div>
 
-    <!-- ===== PERSONS LIST ===== -->
+    <!-- PERSONS LIST -->
     <div class="chat-list" id="chatList">
         <div class="empty-state">
             <i class="fas fa-users empty-icon"></i>
@@ -61,10 +60,10 @@
         </div>
     </div>
 
-    <!-- ===== FAB ===== -->
+    <!-- FAB -->
     <button id="fabAddPerson" class="fab-button"><i class="fas fa-plus"></i></button>
 
-    <!-- ===== MODAL: ADD PERSON ===== -->
+    <!-- MODAL: ADD PERSON -->
     <div id="personModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -99,7 +98,7 @@
         </div>
     </div>
 
-    <!-- ===== MODAL: CLIENT DETAILS ===== -->
+    <!-- MODAL: CLIENT DETAILS -->
     <div id="clientModal" class="modal modal-full">
         <div class="modal-content modal-large">
             <div class="modal-header client-header">
@@ -144,7 +143,7 @@
         </div>
     </div>
 
-    <!-- ===== MODAL: CONFIRM ===== -->
+    <!-- MODAL: CONFIRM -->
     <div id="confirmModal" class="modal">
         <div class="modal-content modal-small">
             <div class="modal-header">
@@ -161,10 +160,10 @@
         </div>
     </div>
 
-    <!-- ===== TOAST ===== -->
+    <!-- TOAST -->
     <div id="toastContainer"></div>
 
-    <!-- ===== FIREBASE ===== -->
+    <!-- FIREBASE -->
     <script type="importmap">
         {
             "imports": {
@@ -176,8 +175,6 @@
     </script>
 
     <script type="module" src="js/firebase-config.js"></script>
-    <script type="module" src="js/security.js"></script>
-    <script type="module" src="js/auth.js"></script>
     <script type="module" src="js/backup.js"></script>
     <script type="module" src="js/app.js"></script>
 
