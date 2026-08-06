@@ -1,3 +1,7 @@
+// ============================================================
+// BACKUP MODULE
+// ============================================================
+
 import { db } from './firebase-config.js';
 import { collection, getDocs, addDoc, deleteDoc, doc, writeBatch } from "firebase/firestore";
 
@@ -30,22 +34,16 @@ export async function exportBackup() {
         document.body.removeChild(link);
         URL.revokeObjectURL(url);
 
-        if (window.showToast) {
-            window.showToast('✅ تم تصدير النسخة الاحتياطية', 'success');
-        }
-        console.log('✅ Export successful');
+        window.showToast('✅ تم تصدير النسخة الاحتياطية', 'success');
         return true;
     } catch (error) {
-        console.error('❌ Export error:', error);
-        if (window.showToast) {
-            window.showToast('❌ خطأ في التصدير: ' + error.message, 'error');
-        }
+        console.error('Export error:', error);
+        window.showToast('❌ خطأ في التصدير: ' + error.message, 'error');
         return false;
     }
 }
 
 export function importBackup() {
-    console.log('📥 Importing backup...');
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json';
@@ -87,16 +85,11 @@ export function importBackup() {
                 await addDoc(collection(db, "debts"), debtData);
             }
 
-            if (window.showToast) {
-                window.showToast('✅ تم استعادة البيانات', 'success');
-            }
+            window.showToast('✅ تم استعادة البيانات', 'success');
             setTimeout(() => location.reload(), 1500);
-
         } catch (error) {
-            console.error('❌ Restore error:', error);
-            if (window.showToast) {
-                window.showToast('❌ خطأ في الاستعادة: ' + error.message, 'error');
-            }
+            console.error('Restore error:', error);
+            window.showToast('❌ خطأ في الاستعادة: ' + error.message, 'error');
         }
         input.remove();
     };
@@ -104,7 +97,5 @@ export function importBackup() {
     input.click();
 }
 
-// Export to window
 window.exportBackup = exportBackup;
 window.importBackup = importBackup;
-console.log('✅ Backup module ready');
